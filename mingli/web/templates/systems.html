@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}盘局之林 · 命理玄师{% endblock %}
+{% block content %}
+
+<header class="page-head">
+  <p class="kicker">ARCHIVE · ALL SYSTEMS</p>
+  <h1>盘局之林</h1>
+</header>
+<p class="lead">未上线的体系如实标注状态——一个体系没有可靠计算器，就明确标记 <code>planned</code> / <code>knowledge-only</code>，绝不假装支持。</p>
+
+{% set region_cn = {'east':'东方','west':'西方','cross-cultural':'跨文化'} %}
+
+<h2>可运行 <span class="hint">runnable · 确定性引擎已就位</span></h2>
+<ul class="sys-list">
+  {% for s in all_systems if s.runnable %}
+  <li>
+    <a class="sys-row {{ s.region }}" href="/run/{{ s.id }}">
+      <span class="sys-idx">{{ '%02d' % loop.index }}</span>
+      <span class="sys-name">{{ s.name }}<span class="badge active">{{ '已上线' if s.status == 'active' else s.status }}</span></span>
+      <span class="sys-cat">{{ region_cn.get(s.region, s.region) }} 术数 · {{ s.category|join(' · ') }}</span>
+      <span class="sys-strength">{{ s.strengths }}</span>
+      <span class="sys-go">起局 →</span>
+    </a>
+  </li>
+  {% endfor %}
+</ul>
+
+{% if planned %}
+<h2>登册未授 <span class="hint">planned / knowledge-only —— 诚实登记，不符幻术</span></h2>
+<ul class="sys-list">
+  {% for s in planned %}
+  <li>
+    <div class="sys-row off {{ s.region }}">
+      <span class="sys-idx">{{ '%02d' % loop.index }}</span>
+      <span class="sys-name">{{ s.name }}<span class="badge {{ s.status }}">{{ '仅知识' if s.status=='knowledge-only' else '规划中' }}</span></span>
+      <span class="sys-cat">{{ region_cn.get(s.region, s.region) }} 术数 · {{ s.category|join(' · ') }}</span>
+      <span class="sys-strength">{{ s.strengths }}</span>
+      {% if s.limitations %}<span class="sys-note">◈ {{ s.limitations }}</span>{% endif %}
+      {% if s.note %}<span class="sys-note">◈ {{ s.note }}</span>{% endif %}
+    </div>
+  </li>
+  {% endfor %}
+</ul>
+{% endif %}
+
+<div class="disclaimer-box">
+  体系依其「输入信息结构」分类（出生时刻型 / 当下时刻型 / 随机抽取型 / 数字姓名型 / 形势空间型 / 意识象征型）。
+  不同类别不可强行嫁接：一排八字是与一组塔罗各自独立起算，对照只呈异同。
+</div>
+{% endblock %}

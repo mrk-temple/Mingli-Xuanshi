@@ -1,0 +1,64 @@
+{
+  "skill": "xuan-shu",
+  "version": "1.0.0",
+  "test_cases": [
+    {
+      "id": "should-trigger-01",
+      "type": "should_trigger",
+      "prompt": "帮我摇个六爻卦，看看今年财运怎么样",
+      "expected_behavior": "应激活 xuan-shu，走阶段 5A：问摇卦方式（用户自摇报背数或脚本模拟）→ 跑 liuyao.py → 取妻财爻为用神断卦",
+      "notes": "正面场景：六爻是最新接入的体系，核心触发词'六爻/摇卦'"
+    },
+    {
+      "id": "should-trigger-02",
+      "type": "should_trigger",
+      "prompt": "用塔罗牌占卜一下我和对象的关系，三张牌",
+      "expected_behavior": "应激活 xuan-shu，走阶段 5E：tarot.py --spread three 抽牌 → 按 tarot-guide/tarot-meanings 解读",
+      "notes": "正面场景：塔罗 + 牌阵明确 + 所问事项明确"
+    },
+    {
+      "id": "should-trigger-03",
+      "type": "should_trigger",
+      "prompt": "小六壬掐指一算，农历六月初三申时，问出行",
+      "expected_behavior": "应激活 xuan-shu，走阶段 5C：xiaoliuren.py --lunar 6 3 9 起课并按出行事项断",
+      "notes": "正面场景：小六壬 + 农历三数已给全"
+    },
+    {
+      "id": "should-trigger-04",
+      "type": "should_trigger",
+      "prompt": "我是2006年3月26日出生的，帮我排八字看看大运流年",
+      "expected_behavior": "应激活 xuan-shu，走阶段 1-4：paipan.py --gender 排盘+大运 → 旺衰格局用神 → 岁运应期 → 报告",
+      "notes": "正面场景：命理线排盘+大运流年"
+    },
+    {
+      "id": "should-trigger-05",
+      "type": "should_trigger",
+      "prompt": "大六壬起一课，公历2026年8月11日下午3点，问找工作",
+      "expected_behavior": "应激活 xuan-shu，走阶段 5B：daliuren.py --datetime 2026 8 11 15 起课 → 按课体三传断",
+      "notes": "正面场景：大六壬 + 公历起课时间"
+    },
+    {
+      "id": "should-not-trigger-01",
+      "type": "should_not_trigger",
+      "prompt": "帮我把这套塔罗解读流程做成一个 skill",
+      "expected_behavior": "不应激活 xuan-shu 的占卜流程，应激活 skill-creator（方法论沉淀请求，description 负例已排除）",
+      "notes": "跨 skill 混淆诱饵：'塔罗'关键词出现但意图是创建技能"
+    },
+    {
+      "id": "should-not-trigger-02",
+      "type": "should_not_trigger",
+      "prompt": "紫微斗数排个盘，看看我的命宫主星",
+      "expected_behavior": "不应激活 xuan-shu 的排盘流程（或触发后按 systems-map §5 如实说明紫微不在范围并转介八字岁运线）",
+      "notes": "跨术数诱饵：紫微斗数未覆盖，description 负例已排除"
+    },
+    {
+      "id": "edge-01",
+      "type": "edge_case",
+      "prompt": "我又想算八字又想要塔罗牌看看，今年到底怎么样",
+      "expected_behavior": "应激活 xuan-shu，按 systems-map §4 多线并进：八字岁运 + 塔罗三张，各自独立成章后互证，矛盾如实呈现",
+      "notes": "边界场景：跨体系组合请求，检验体系地图与互证规则"
+    }
+  ],
+  "minimum_pass_rate": 0.8,
+  "notes": "验收标准：全部 should_not_trigger 必须不激活（容错 0）；should_trigger 通过率 ≥ minimum_pass_rate。回放方法：新会话逐条发起。注意：纯梅花起卦（无六爻/六壬/塔罗等新体系词）可能同时命中 meihua-charting 与 xuan-shu，属预期重叠，任一激活且流程正确即视为通过。"
+}

@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>{% block title %}命理玄师 · Mingli XuanShi{% endblock %}</title>
+  <link rel="stylesheet" href="/static/style.css?v=20261010">
+  <link rel="stylesheet" href="/static/elegant.css?v=20261105">
+  <script src="/static/ui.js?v=20261105" defer></script>
+  {% block head %}{% endblock %}
+  {# 无外网资源：纯离线 CSS/JS，保证可用性与隐私 #}
+  <script>
+    // 主题：默认跟随系统；手动切换写入 <html data-theme> 并持久化（尽早执行，避免闪屏）
+    (function () {
+      var saved = null;
+      try { saved = localStorage.getItem('mingli-theme'); } catch (e) {}
+      var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      var theme = saved || (prefersDark ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
+</head>
+<body{% block body_class %}{% endblock %}>
+{% set path = request.url.path %}
+<div class="app-shell">
+
+  {# ▍桌面侧边栏 · 三空间导航 ─────────────────────── #}
+  <aside class="sidebar" aria-label="主导航">
+    <a class="brand" href="/">
+      <span class="brand-mark">玄师</span>
+      <span>
+        <span class="brand-name">命理<b>玄师</b></span>
+        <span class="brand-en">观象 · 明理 · 问心</span>
+      </span>
+    </a>
+
+    <nav class="sidebar-nav">
+      <a class="nav-link {% if path == '/' %}on{% endif %}" href="/"><span class="nav-symbol" aria-hidden="true">⌂</span>首页</a>
+
+      {% set gen_on = (path.startswith('/generate') or path.startswith('/run')
+                       or path.startswith('/session') or path.startswith('/compare')
+                       or path.startswith('/analyze') or path.startswith('/recommend')
+                       or path in ['/ask', '/recommend', '/systems', '/charts', '/cal']) %}
+      {% set chat_on = path.startswith('/chat') %}
+      {% set res_on = path.startswith('/research') or path in ['/history', '/lab', '/learn'] %}
+
+      <details class="nav-group" {% if gen_on %}open{% endif %}>
+        <summary class="nav-link {% if gen_on %}on{% endif %}">
+          <span class="nav-symbol" aria-hidden="true">☷</span><span>术数生成</span><span class="nav-caret">▸</span>
+        </summary>
+        <div class="nav-sub">
+          <a class="{% if path == '/generate' %}cur{% endif %}" href="/generate">体系总览</a>
+          <a class="{% if path == '/ask' %}cur{% endif %}" href="/ask">问事推荐</a>
+          <details class="nav-systems">
+          <summary>按体系选择 <span aria-hidden="true">＋</span></summary>
+          <div class="nav-system-links">
+          <a class="{% if path.startswith('/generate/bazi') or path.startswith('/run/bazi') %}cur{% endif %}" href="/generate/bazi">八字</a>
+          <a class="{% if path.startswith('/generate/liuyao') or path.startswith('/run/liuyao') %}cur{% endif %}" href="/generate/liuyao">六爻纳甲</a>
+          <a class="{% if path.startswith('/generate/meihua') or path.startswith('/run/meihua') %}cur{% endif %}" href="/generate/meihua">梅花易数</a>
+          <a class="{% if path.startswith('/generate/daliuren') or path.startswith('/run/daliuren') %}cur{% endif %}" href="/generate/daliuren">大六壬</a>
+          <a class="{% if path.startswith('/generate/xiaoliuren') or path.startswith('/run/xiaoliuren') %}cur{% endif %}" href="/generate/xiaoliuren">小六壬</a>
+          <a class="{% if path.startswith('/generate/tarot') or path.startswith('/run/tarot') %}cur{% endif %}" href="/generate/tarot">塔罗</a>
+          <a class="{% if path.startswith('/generate/yijing') or path.startswith('/run/yijing') %}cur{% endif %}" href="/generate/yijing">易经义理</a>
+          </div></details>
+          <span class="nav-sep" aria-hidden="true"></span>
+          <a class="{% if path.startswith('/compare') %}cur{% endif %}" href="/compare">多体系对照</a>
+          <a class="{% if path.startswith('/analyze') %}cur{% endif %}" href="/analyze">综合分析</a>
+          <a class="{% if path == '/charts' %}cur{% endif %}" href="/charts">命盘库</a>
+          <a class="{% if path == '/cal' %}cur{% endif %}" href="/cal">历法</a>
+        </div>
+      </details>
+
+      <details class="nav-group" {% if chat_on %}open{% endif %}>
+        <summary class="nav-link {% if chat_on %}on{% endif %}">
+          <span class="nav-symbol" aria-hidden="true">◇</span><span>玄师对话</span><span class="nav-caret">▸</span>
+        </summary>
+        <div class="nav-sub">
+          <a class="{% if path == '/chat' %}cur{% endif %}" href="/chat">讨论串列表</a>
+        </div>
+      </details>
+
+      <details class="nav-group" {% if res_on %}open{% endif %}>
+        <summary class="nav-link {% if res_on %}on{% endif %}">
+          <span class="nav-symbol" aria-hidden="true">▤</span><span>记录与研究</span><span class="nav-caret">▸</span>
+        </summary>
+        <div class="nav-sub">
+          <a class="{% if path == '/research' and request.query_params.get('tab', 'records') != 'lab' and request.query_params.get('tab') != 'learn' or path == '/history' %}cur{% endif %}" href="/research?tab=records">我的记录</a>
+          <a class="{% if request.query_params.get('tab') == 'lab' or path == '/lab' %}cur{% endif %}" href="/research?tab=lab">预测实验室</a>
+          <a class="{% if request.query_params.get('tab') == 'learn' or path == '/learn' %}cur{% endif %}" href="/research?tab=learn">学习空间</a>
+        </div>
+      </details>
+
+      <div class="nav-foot-gap"></div>
+      <a class="nav-link {% if path == '/settings' %}on{% endif %}" href="/settings">⚙ 设置</a>
+    </nav>
+
+    <div class="sidebar-foot">
+      <button type="button" class="theme-toggle" data-theme-toggle aria-label="切换明暗主题">
+        <span class="tt-fig tt-sun-fig">☀</span>
+        <span class="tt-fig tt-moon-fig">☾</span>
+        <span>主题</span>
+      </button>
+      <div class="sidebar-motto"><span aria-hidden="true">一</span><p>观其象，明其理。<br>答案，仍在生活里。</p></div>
+      <p class="sidebar-note">传统文化 · 自省参考<br>非科学预测</p>
+    </div>
+  </aside>
+
+  {# ▍页面区 ─────────────────────────────────── #}
+  <div class="page">
+    <div class="page-meta-bar"><span>命理玄师 <i>/</i> {% if path == '/' %}观象书房{% elif path.startswith('/session') %}解读札记{% elif gen_on %}术数生成{% elif chat_on %}玄师对话{% elif res_on %}记录与研究{% else %}工作台{% endif %}</span><span><b class="meta-dot" aria-hidden="true"></b> 传统文化与自省</span></div>
+    <header class="topbar">
+      <a class="topbar-brand" href="/">命理<b>玄师</b></a>
+      <span class="topbar-crumb">{% block crumb %}{% endblock %}</span>
+      <button type="button" class="theme-toggle" data-theme-toggle aria-label="切换明暗主题">
+        <span class="tt-fig tt-sun-fig">☀</span>
+        <span class="tt-fig tt-moon-fig">☾</span>
+      </button>
+    </header>
+
+    <main class="wrap main">
+      {% block content %}{% endblock %}
+    </main>
+
+    <footer class="site-footer">
+      <div class="wrap">
+        <p>命理玄师 —— 术数可计算者交予引擎，可解释者交予规则，有争议者示之以争，欲验证者留给实验。</p>
+        <p>本平台为个人术数研究与实验工作台：不追求证明玄术为真，也不预设其为假。所有输出均为传统文化/象征性解释或娱乐性参考，不构成医疗、投资、法律等任何专业建议。</p>
+      </div>
+    </footer>
+  </div>
+
+  {# ▍移动端底栏 · 三空间 ─────────────────────── #}
+  <nav class="bottom-nav" aria-label="移动端主导航">
+    <a href="/" {% if path == '/' %}class="on"{% endif %}><span class="bn-icon">⌂</span><span>首页</span></a>
+    <a href="/generate" {% if gen_on %}class="on"{% endif %}><span class="bn-icon">生</span><span>生成</span></a>
+    <a href="/chat" {% if path.startswith('/chat') %}class="on"{% endif %}><span class="bn-icon">谈</span><span>对话</span></a>
+    <a href="/research" {% if path.startswith('/research') or path in ['/history','/lab','/learn'] %}class="on"{% endif %}><span class="bn-icon">研</span><span>研究</span></a>
+    <a href="/settings" {% if path == '/settings' %}class="on"{% endif %}><span class="bn-icon">⚙</span><span>设置</span></a>
+  </nav>
+</div>
+
+<script>
+  (function () {
+    // 主题切换（唯一交互状态；其余页面均无前端状态）
+    var root = document.documentElement;
+    var btns = document.querySelectorAll('[data-theme-toggle]');
+    function applyTheme(t) {
+      root.setAttribute('data-theme', t);
+      try { localStorage.setItem('mingli-theme', t); } catch (e) {}
+    }
+    btns.forEach(function (b) {
+      b.addEventListener('click', function () {
+        applyTheme(root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+      });
+    });
+  })();
+</script>
+</body>
+</html>

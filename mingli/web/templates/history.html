@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}历史 · 命理玄师{% endblock %}
+{% block content %}
+
+<header class="page-head">
+  <p class="kicker">ARCHIVE · SESSIONS</p>
+  <h1>历史盘局</h1>
+</header>
+<p class="lead">每次会话保存完整链路：输入快照 → 确定性计算 → 规则解读 → 报告，随时可复查、可溯源。</p>
+
+{% if sessions %}
+<ol class="timeline">
+  {% for s in sessions %}
+  <li class="timeline-item">
+    <time class="tl-time">{{ s.createdAt }}</time>
+    <div class="tl-main">
+      <span class="sysdot {{ 'east' if s.calculation.systemId != 'tarot' else 'west' }}"></span>
+      <a href="/session/{{ s.id }}">{{ s.calculation.systemId }}</a>
+      <span class="muted small">{{ s.question.text[:60] }}{% if s.question.text|length > 60 %}…{% endif %}</span>
+    </div>
+    <div class="tl-sub">
+      <span class="badge score">{{ s.interpretation.conclusions|length if s.interpretation else '—' }} 条断语</span>
+      <span class="mono" style="font-size:11px; color:var(--ink-4);">{{ s.calculation.engineVersion }}</span>
+      <a href="/session/{{ s.id }}">打开 →</a>
+    </div>
+  </li>
+  {% endfor %}
+</ol>
+{% else %}
+<div class="empty">尚无盘局记录。从一个<a href="/ask">问题</a>或直接<a href="/systems">起一个盘局</a>开始。</div>
+{% endif %}
+{% endblock %}

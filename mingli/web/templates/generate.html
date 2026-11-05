@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}术数生成 · 命理玄师{% endblock %}
+{% block body_class %} class="page-generate"{% endblock %}
+{% block content %}
+
+<header class="page-head">
+  <p class="kicker">壹 · 观象</p>
+  <h1>带着问题，<span class="fn">择一法观照</span></h1>
+</header>
+<p class="lead">选择一种观察方式。结果先给白话回答与现实建议，想深入时再展开盘面和依据。</p>
+<div class="reading-route-cards" aria-label="按问题开始">
+  <a href="/generate/tarot?q={{ '面对工作选择，我可以先整理哪些信息？'|urlencode }}"><span class="route-emblem" aria-hidden="true">☰</span><span class="route-label">理清方向</span><h2>工作与选择 <span>↗</span></h2><p>梳理眼前的选项，找到可以先做的一步。</p><small>塔罗自省 · 无需出生资料</small></a>
+  <a href="/generate/tarot?q={{ '我想改善一段关系，应该先厘清什么？'|urlencode }}"><span class="route-emblem" aria-hidden="true">◇</span><span class="route-label">照见感受</span><h2>关系与沟通 <span>↗</span></h2><p>分清自己的感受、需求与对他人的猜测。</p><small>象征自省 · 不判断他人想法</small></a>
+  <a href="/generate/bazi?q={{ '我的八字结构说明什么，又有哪些不能判断？'|urlencode }}"><span class="route-emblem" aria-hidden="true">☷</span><span class="route-label">读懂结构</span><h2>了解传统命盘 <span>↗</span></h2><p>认识四柱与五行，也了解它们不能回答什么。</p><small>八字结构 · 需要出生日期</small></a>
+</div>
+<div class="reading-process"><span><b>一</b> 写下提问</span><i aria-hidden="true">→</i><span><b>二</b> 排盘 / 抽牌</span><i aria-hidden="true">→</i><span><b>三</b> 读懂白话</span><i aria-hidden="true">→</i><span><b>四</b> 核对依据</span></div>
+<p class="generation-disclosure">本机计算盘面，AI 转述已有规则。模型不可用时显示离线指引。传统术数并非经科学验证的预测方法。</p>
+
+<div class="ask-shortcut">
+  <span class="muted small">不知道用哪个？</span>
+  <a class="btn btn-ghost btn-sm" href="/ask">说出你的问题，让系统按信息结构推荐 →</a>
+</div>
+
+<section class="system-catalog" aria-labelledby="catalog-title">
+<div class="section-heading"><h2 id="catalog-title">按术数选择</h2><span class="muted small">保留各自的规则与边界</span></div>
+<div class="system-filters" role="group" aria-label="筛选术数体系" hidden>
+  <button type="button" data-system-filter="all" aria-pressed="true">全部</button>
+  <button type="button" data-system-filter="natal" aria-pressed="false">命盘类</button>
+  <button type="button" data-system-filter="moment" aria-pressed="false">问事 · 起课类</button>
+  <button type="button" data-system-filter="randomized" aria-pressed="false">随机抽取类</button>
+</div>
+<ul class="system-card-grid">
+{% for g in groups %}
+  {% for s in g.rows %}
+  <li data-system-family="{{ g.key }}">
+    <a class="system-card {{ s.region }}" href="/generate/{{ s.id }}">
+      <span class="system-card-top"><span class="system-glyph" aria-hidden="true">{{ {'bazi':'☷', 'liuyao':'☰', 'meihua':'✧', 'daliuren':'◈', 'xiaoliuren':'☵', 'yijing':'☳', 'tarot':'◇'}.get(s.id, '○') }}</span><span class="badge active">已上线</span></span>
+      <h3>{{ s.name }}</h3>
+      <span class="system-family-label">{{ g.name }} · {{ '东方' if s.region=='east' else '西方' }}</span>
+      <p>{{ reading_intros.get(s.id, s.strengths) }}</p>
+      <span class="system-card-go">选择此方式 <b aria-hidden="true">↗</b></span>
+    </a>
+  </li>
+  {% endfor %}
+{% endfor %}
+</ul>
+<p class="filter-status" role="status" aria-live="polite"></p>
+</section>
+
+<div class="research-modes">
+  <h2>研究型起局 <span class="hint">Research Modes · 同题多体系</span></h2>
+  <div class="quick-actions">
+    <a href="/compare">多体系对照 <span class="muted small">同一问题独立起局，只呈收敛/分歧</span></a>
+    <a href="/analyze">综合分析 <span class="muted small">综合优先，对照作支撑</span></a>
+    <a href="/charts">命盘库 <span class="muted small">保存出生档案，跨命盘类体系快速重排</span></a>
+    <a href="/cal">历法 · 万年历 <span class="muted small">干支/月令/农历/节气速查</span></a>
+  </div>
+</div>
+
+{% if planned %}
+<details class="planned-catalog"><summary>查看尚未实现的体系（{{ planned|length }}）</summary>
+<h2>登册未授 <span class="hint">planned / knowledge-only —— 诚实登记，不符幻术</span></h2>
+<ul class="sys-list">
+  {% for s in planned %}
+  <li>
+    <div class="sys-row off {{ s.region }}">
+      <span class="sys-idx">{{ '%02d' % loop.index }}</span>
+      <span class="sys-name">{{ s.name }}<span class="badge {{ s.status }}">{{ '仅知识' if s.status=='knowledge-only' else '规划中' }}</span></span>
+      <span class="sys-cat">{{ '东方' if s.region=='east' else ('西方' if s.region=='west' else '跨文化') }} 术数 · {{ s.category|join(' · ') }}</span>
+      <span class="sys-strength">{{ s.strengths }}</span>
+      {% if s.limitations %}<span class="sys-note">◈ {{ s.limitations }}</span>{% endif %}
+      {% if s.note %}<span class="sys-note">◈ {{ s.note }}</span>{% endif %}
+    </div>
+  </li>
+  {% endfor %}
+</ul>
+</details>
+{% endif %}
+
+<div class="disclaimer-box">
+  体系依其「输入信息结构」分类（出生时刻型 / 当下时刻型 / 随机抽取型）。不同类别不可强行嫁接：
+  一排八字是与一组塔罗各自独立起算。没有可靠计算器的体系如实标注 planned / knowledge-only，绝不假装支持。
+</div>
+{% endblock %}

@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% block title %}记录与研究 · 命理玄师{% endblock %}
+{% block content %}
+
+<header class="page-head">
+  <p class="kicker">ARCHIVE · RESEARCH LOG</p>
+  <h1>记录与研究</h1>
+</header>
+<p class="lead">历史盘局、预测实验与规则课堂——研究闭环的沉淀层：生成 → 对话 → <strong>沉淀</strong>。</p>
+
+{# ── 三 Tab ── #}
+<div class="layer-tabs research-tabs">
+  <a class="{{ 'on' if tab == 'records' }}" href="/research?tab=records">一 · 我的记录</a>
+  <a class="{{ 'on' if tab == 'lab' }}" href="/research?tab=lab">二 · 预测实验室</a>
+  <a class="{{ 'on' if tab == 'learn' }}" href="/research?tab=learn">三 · 学习空间</a>
+</div>
+
+{# ═══════════════ Tab 1 · 我的记录 ═══════════════ #}
+{% if tab == 'records' %}
+<form class="filter-bar" action="/research" method="get" style="display:flex; gap:12px; flex-wrap:wrap; align-items:center; margin-bottom:14px;">
+  <input type="hidden" name="tab" value="records">
+  <input type="search" name="q" value="{{ filter_q }}" placeholder="搜索问题/体系/标签…" style="max-width:280px;">
+  <select name="system" style="max-width:160px;">
+    <option value="">全部体系</option>
+    {% for sid in all_system_ids %}
+    <option value="{{ sid }}" {{ 'selected' if filter_system == sid }}>{{ sid }}</option>
+    {% endfor %}
+  </select>
+  <label class="muted small" style="margin:0;"><input type="checkbox" name="fav" value="1" {{ 'checked' if filter_fav }}> 只看收藏</label>
+  <button type="submit" class="btn btn-ghost btn-sm">筛选</button>
+</form>
+
+{% if sessions %}
+<ol class="timeline">
+  {% for s in sessions %}
+  <li class="timeline-item {% if s.favorite %}fav{% endif %}">
+    <time class="tl-time">{{ s.createdAt[:16] }}</time>
+    <div class="tl-main">
+      <span class="sysdot {{ 'east' if s.calculation.systemId != 'tarot' else 'west' }}"></span>
+      {% if s.favorite %}<span class="badge active">★</span>{% endif %}
+      <a href="/session/{{ s.id }}">{{ s.calculation.systemId }}</a>
+      <span class="muted small">{{ s.question.text[:60] }}{% if s.question.text|length > 60 %}…{% endif %}</span>
+      {% for t in s.tags %}<span class="skychip">{{ t }}</span>{% endfor %}
+    </div>
+    <div class="tl-sub">
+      <span class="badge score">{{ s.interpretation.conclusions|length if s.interpretation else '—' }} 条断语</span>
+      {% if chat_counts.get(s.id) %}<a href="/chat/new/{{ s.id }}" class="muted small">有讨论 →</a>{% endif %}
+      <span class="mono" style="font-size:11px; color:var(--ink-4);">{{ s.calculation.engineVersion }}</span>
+      <a href="/session/{{ s.id }}">打开 →</a>
+    </div>
+  </li>
+  {% endfor %}
+</ol>
+{% else %}
+<div class="empty">没有匹配的记录。从<a href="/generate">术数生成</a>开始新的一局。</div>
+{% endif %}
+
+{# ═══════════════ Tab 2 · 预测实验室 ═══════════════ #}
+{% elif tab == 'lab' %}
+{% set V = {'pending':'待验证','evaluated':'已判定','no-outcome':'无法验证'} %}
+{% set VD = {'exact-hit':'完全命中','partial-hit':'部分命中','direction-hit':'方向命中','timing-hit':'时间命中','miss':'未命中','ambiguous':'模糊','no-outcome':'无法验证'} %}
+
+<p class="lead" style="max-width:860px;">创建预测 → 锁定 → 等待真实结果 → 录入 → 按公开规则裁定。
+系统没有自动放宽口径的路径——命中率不是指标，可验证性才是。</p>
+
+<div class="ledger">
+  <span>记录 <span class="led-num">{{ experiments|length }}</span></span>
+  <span>已判定 <span class="led-num">{{ stats.n }}</span></span>
+  {% for k, label in [('exact-hit','完全命中'),('direction-hit','方向命中'),('partial-hit','部分命中'),('timing-hit','时间命中'),('miss','未命中'),('ambiguous','模糊'),('no-outcome','无法验证')] %}
+  <span class="led-pill">{{ label }} {{ stats.verdictCounts[k] }}</span>
+  {% endfor %}
+</div>
+<p class="muted small">{{ stats.note }}</p>
+
+{% if experiments %}
+<h2>预测记录 <span class="hint">Research Log · 逐条可溯源</span></h2>
+<ol class="lab-log">
+  {% for e in experiments %}
+  <li class="lab-row">
+    <time class="lab-date">{{ e.lockedAt }}</time>
+    <div class="lab-system">
+      <span class="sysdot {{ 'east' if e.systemId != 'tarot' else 'west' }}"></span>
+      <span class="badge {{ e.status }}">{{ V[e.status] }}</span>
+      {% if e.blind %}<span class="muted small">◈ 盲测</span>{% endif %}
+      {% if e.verdict %}<span class="badge {% if e.verdict in ['exact-hit','partial-hit','direction-hit','timing-hit'] %}active{% elif e.verdict == 'miss' %}region-east{% else %}planned{% endif %}">{{ VD[e.verdict] }}</span>{% endif %}
+    </div>
+    <div class="lab-q">{{ e.systemId }} · {{ e.questionText }}</div>
+    <blockquote class="lab-pred" style="border:none; padding:0; margin:2px 0 0; font-family:var(--font-body); font-size:var(--text-sm);">{{ e.prediction }}</blockquote>
+    <div class="lab-meta">
+      <span class="muted small">判窗 {{ e.windowStart }} ~ {{ e.windowEnd }}</span>
+      <a class="lab-go" href="/research/lab-detail/{{ e.id }}">详情 →</a>
+    </div>
+  </li>
+  {% endfor %}
+</ol>
+{% else %}
+<h2 style="margin-top:34px;">预测记录</h2>
+<div class="empty">暂无预测记录。从任意盘局结果页「锁定预测」开始，或<a href="/compare">用多体系对照</a>一次锁定一组。</div>
+{% endif %}
+
+<div class="disclaimer-box">
+  诚实约束：判定完全由你录入的真实结果 + 公开规则表合成；系统绝不为了「看起来准」把 miss 裁成 direction-hit。
+  此处统计为你个人实验样本，不构成对任何术数体系有效性的科学评价。
+</div>
+
+{# ═══════════════ Tab 3 · 学习空间 ═══════════════ #}
+{% else %}
+<p class="lead" style="max-width:860px;">把<strong>规则库</strong>按体系组织成可读条目——每条断律都带
+<strong>来源等级（S/A/B/C/D）</strong>与出处，是验证"解读从哪来"的依据。
+<strong>流派有争议的规则并列展示，不强行调和。</strong></p>
+
+<div class="card" style="padding:14px 20px; margin-bottom:16px;">
+  <div class="stat-row tight">
+    <div class="stat-cell"><div class="k">等级</div><div class="v dim"><span class="level-S">S 原典</span> · <span class="level-A">A 学术</span> · <span class="level-B">B 主流教材</span> · <span class="level-C">C 当代实践</span> · <span class="level-D">D 网络</span></div></div>
+    <div class="stat-cell"><div class="k">在线体系</div><div class="v dim">{{ active_count }}</div></div>
+  </div>
+</div>
+
+{% for b in learn_blocks %}
+<span class="sec-tag">SYSTEM · {{ b.name }}</span>
+<div class="card">
+  {% if b.status != 'active' %}
+  <div class="notice" style="margin-bottom:10px; padding:8px 12px;">
+    <span class="badge planned">{{ b.status }}</span> 只有结构化的<strong>知识</strong>，暂无可靠确定性算盘引擎——本平台如实标注，不假装支持（见<a href="/generate">术数生成</a>）。
+  </div>
+  {% endif %}
+  <p class="muted small">{{ b.strengths }}</p>
+  {% for r in b.rules %}
+  <div class="rule-item">
+    <div class="rule-head">
+      <code class="rule-id">{{ r.id }}</code>
+      <span class="badge level-{{ r.sourceLevel }}">{{ r.sourceLevel }}</span>
+      {% if r.tradition != 'mainstream' %}<span class="badge planned">流派 · {{ r.tradition }}</span>{% endif %}
+    </div>
+    <div class="rule-statement">{{ r.statement }}</div>
+    <div class="rule-source muted small"><span class="level-{{ r.sourceLevel }}">[{{ r.sourceLevel }}]</span> {{ r.source }}</div>
+    {% if r.keywords %}<div class="muted small">触发：{{ r.keywords|join(' · ') }}</div>{% endif %}
+    {% if r.disputes %}
+    <div class="notice" style="margin-top:8px; padding:8px 12px;">
+      <strong>争议：</strong>
+      {% for d in r.disputes %}<p>{{ d }}</p>{% endfor %}
+    </div>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty">规则库暂无条目。</div>
+{% endfor %}
+
+<div class="notice"><strong>不在本页的内容：</strong>这里是可追溯的规则条目，不含「教学第一步」式的自由发挥话术——本平台刻意不把玄学话术包装成权威教程。</div>
+{% endif %}
+
+{% endblock %}

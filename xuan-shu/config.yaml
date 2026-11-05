@@ -1,0 +1,28 @@
+# xuan-shu（玄术）配置
+
+# ── 命理线（八字，同 yixue-mingli 约定）──
+# 节气边界提醒阈值（天）：出生时刻距节气不足该值，须让用户复核时辰
+term_tolerance_days: 1.0
+
+# 断卦日辰干支获取方式：user（询问用户）/ auto（脚本按当前日期计算，默认）/ skip（不查）
+day_master_source: auto
+
+# ── 占卜线 ──
+# 梅花易数起卦时辰误差容忍（分钟）：超过则提醒用户核对
+time_tolerance_minutes: 30
+
+# 六爻铜钱阴阳约定：back_yang（字=阴、背=阳，主流，默认）/ zi_yang（字=阳变体）
+liuyao_coin_convention: back_yang
+
+# 小六壬算法：gufa（古法三步重锚，默认）/ sum（总数累加法变体，非主流）
+xiaoliuren_mode: gufa
+
+# 塔罗逆位：true（每张独立 50/50 正逆，默认）/ false（全部按正位读）
+tarot_reversals: true
+
+# ── 报告模板（相对本 skill 根）──
+report_template: "templates/report.md.template"
+divination_report_template: "templates/divination-report.md.template"
+
+# ── 随机性说明 ──
+# 塔罗抽牌与六爻模拟摇卦默认用密码学随机（secrets），可用 --seed 复现；随机环节应在报告中说明来源

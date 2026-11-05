@@ -1,0 +1,550 @@
+{% extends "base.html" %}
+{% block title %}结果 · {{ s.systemId }} · 命理玄师{% endblock %}
+{% block body_class %} class="page-reading"{% endblock %}
+{% block content %}
+
+{# ── 报告头 · 本次分析元信息 ── #}
+<div class="reading-heading-row">
+<header class="page-head reading-head">
+  <p class="kicker"><a href="/generate">观象</a> / 本次解读</p>
+  {% set names = {'tarot':'塔罗', 'bazi':'八字', 'liuyao':'六爻纳甲', 'meihua':'梅花易数', 'daliuren':'大六壬', 'xiaoliuren':'小六壬', 'yijing':'易经义理'} %}
+  <h1>{{ names.get(s.calculation.systemId, s.calculation.systemId) }} <span class="fn">解读札记</span></h1>
+</header>
+{# ── 核心动作：与玄师讨论 + 导出 ── #}
+<div class="export-actions">
+  {% if llm_ready %}
+  <a class="btn chat-cta" href="/chat/new/{{ s.id }}">继续聊这个问题 →</a>
+  {% else %}
+  <a class="btn chat-cta needs-setup" href="/settings" title="配置 API Key 后启用">与玄师讨论（需先配置 API）→</a>
+  {% endif %}
+  <details class="report-tools"><summary>更多操作 <span aria-hidden="true">⌄</span></summary><div class="report-tools-menu">
+    <a href="/session/{{ s.id }}/report">导出报告（人读 · 可打印）</a>
+    <a href="/session/{{ s.id }}/export.ai.json">导出数据（AI 读 · JSON）</a>
+    <a href="/generate/{{ s.systemId }}?q={{ s.question.text|urlencode }}">调整问题，重新开始</a>
+  </div></details>
+</div>
+</div>
+
+<div class="report-opening">
+<span class="question-seal" aria-hidden="true">问</span><div>
+<p class="reading-question-label">你关心的是</p>
+<p class="reading-question">{{ s.question.text if s.question.text != '(未提供问题)' else '先了解这份盘面，整理自己的思路' }}</p>
+<div class="reading-status"><span class="badge">{% if guide and guide.mode == 'llm' %}AI 白话编辑 · {{ s.interpretation.model }}{% else %}离线阅读指引{% endif %}</span><span>传统文化 / 自省参考 · 非科学预测</span></div>
+</div></div>
+
+<nav class="report-jump" aria-label="报告目录">
+  <a href="#reader-guide"><b>01</b><span>白话回答与建议</span></a>
+  <a href="#raw-result"><b>02</b><span>展开盘面与依据</span></a>
+  <a href="#report-limitation"><b>03</b><span>局限与验证</span></a>
+</nav>
+
+{% if s.interpretation and s.interpretation.presentationNote %}<div class="notice" role="status">{{ s.interpretation.presentationNote }}</div>{% endif %}
+{% if report_error %}<div class="errors" role="alert">本次解读未通过证据校验，已隐藏结论与白话建议。计算盘面仍可复查。</div>{% endif %}
+{% if guide %}
+<section class="reader-layout" id="reader-guide" aria-label="白话解读">
+  <div class="reader-main">
+    <div class="reader-takeaway">
+    <p class="kicker">壹 · 解读</p><h2>先用白话回答</h2>
+    <p class="reader-answer">{{ guide.answer.text }}</p>
+    <div class="reader-ref-row">{% for ref in guide.answer.conclusionRefs %}<button type="button" class="evidence-open" data-evidence="{{ ref - 1 }}">依据 {{ ref }} ↗</button>{% endfor %}</div>
+    </div>
+    <h3 class="reader-section-title">这份解读的要点 <span>逐条查看，依据可追溯</span></h3>
+    <div class="reader-points">
+      {% for point in guide.points %}<article class="reader-point"><span class="reader-number">{{ '%02d' % loop.index }}</span><div><p>{{ point.text }}</p><div class="reader-ref-row">{% for ref in point.conclusionRefs %}<button type="button" class="evidence-open" data-evidence="{{ ref - 1 }}">查看规则结论 {{ ref }}</button>{% endfor %}</div></div></article>{% endfor %}
+    </div>
+    {% if glossary %}<details class="reading-glossary"><summary>遇到术语？展开白话小词典</summary><dl>{% for term, meaning in glossary %}<dt>{{ term }}</dt><dd>{{ meaning }}</dd>{% endfor %}</dl></details>{% endif %}
+  </div>
+  <aside class="reader-actions" aria-label="现实行动建议">
+    <p class="kicker">贰 · 行动</p><h2>接下来，可以做什么</h2>
+    <p class="reader-action-note">以下是现实中的信息收集与反思建议，不是从盘面推导出的预测。</p>
+    {% for action in guide.actions %}<article class="reader-action"><span>{{ '%02d' % loop.index }}</span><h3>{{ action.title }}</h3><p>{{ action.detail }}</p></article>{% endfor %}
+    <div class="reader-followups"><h3>值得继续想一想</h3>{% for q in guide.followUpQuestions %}<p>{{ q }}</p>{% endfor %}</div>
+  </aside>
+</section>
+{% endif %}
+
+{% if threads %}
+<div class="notice" style="padding:8px 12px;">
+  已有讨论串：
+  {% for t in threads %}<a href="/chat/{{ t.id }}">{{ t.title or t.id }}（{{ t.messages|length }} 条）</a>{% if not loop.last %} · {% endif %}{% endfor %}
+</div>
+{% endif %}
+
+{# ── 记录元数据：收藏 / 标签 ── #}
+<details class="meta-editor">
+  <summary class="muted small">收藏 / 标签{% if s.favorite %} · <span class="badge active">已收藏</span>{% endif %}{% if s.tags %} · {{ s.tags|join(' / ') }}{% endif %}</summary>
+  <form action="/session/{{ s.id }}/tags" method="post" style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-top:8px;">
+    <label style="margin:0;"><input type="checkbox" name="favorite" value="true" {{ 'checked' if s.favorite }}> 收藏本次研究</label>
+    <input type="text" name="tags" value="{{ s.tags|join(', ') }}" placeholder="标签（逗号分隔），如：职业, 大运">
+    <button type="submit" class="btn btn-ghost btn-sm">保存</button>
+  </form>
+</details>
+
+{% for w in s.calculation.warnings %}<div class="notice">⚠️ {{ w }}</div>{% endfor %}
+
+{# ═══════════════════════════════════════════
+   RAW RESULT · 原始盘面（符号即 UI）
+   ═══════════════════════════════════════════ #}
+{% set d = s.calculation.data %}
+<details class="professional-reading" id="raw-result">
+<summary><span><b>深入查看盘面与规则</b><small>确定性计算 · 结构分析 · 原始引用</small></span><span class="professional-toggle" aria-hidden="true">＋</span></summary>
+<div class="professional-body">
+<p class="muted small">以下图表展示引擎计算的传统符号。符号分布与规则来源等级不代表现实预测能力。</p>
+<details class="reading-metadata"><summary>计算版本与存档信息</summary><p>引擎：{{ s.calculation.engine }} v{{ s.calculation.engineVersion }} · 会话：{{ s.id }}</p></details>
+
+{% if s.systemId == 'bazi' and d.columns %}
+<div class="card" style="padding-top:26px;">
+  <h3>四柱</h3>
+  <div class="pillars">
+    {% for col in d.columns %}
+    <div class="pillar-card {% if col.pillar == 'day' %}day{% endif %}">
+      <span class="p-label">{{ col.pillarCn }}</span>
+      <span class="p-jz">{{ col.ganYinyang }}{{ col.zhiYinyang }}</span>
+      <span class="p-gan">{{ col.gan }}</span>
+      <span class="p-zhi">{{ col.zhi }}</span>
+      <div class="p-wx">{{ col.ganWuxing }} · {{ col.zhiWuxing }}</div>
+      <div class="p-ss">{{ col.shiShen }}</div>
+      <div class="p-cang">藏 <code>{{ col.cangGan }}</code></div>
+    </div>
+    {% endfor %}
+  </div>
+  <div class="gua-meta">
+    <div>纳音 <b>{{ d.nayinYear }}</b></div>
+    <div>月令 <b>{{ d.yueLing.zhi }}月</b></div>
+    {% if d.longitude %}<div>真太阳时修正 <b>{{ d.eotMinutes }} 分钟</b></div>{% endif %}
+  </div>
+
+  <h3 style="margin-top:22px">五行统计（含藏干）</h3><p class="muted small">数字是盘面分类计数，条长以本盘最高计数为参照；不表示好运、健康或能力分数。</p>
+  {% set mx = d.wuxingHidden.values() | max %}
+  {% for wx in ['木','火','土','金','水'] %}
+  <div class="wx-bar">
+    <span class="w">{{ wx }}</span>
+    <span class="track"><span class="fill" style="width: {{ d.wuxingHidden[wx] * 100 // (mx or 1) }}%"></span></span>
+    <span class="n">{{ d.wuxingHidden[wx] }}</span>
+  </div>
+  {% endfor %}
+
+  {% if d.daYun %}
+  <h3 style="margin-top:24px">大运 <span class="muted small">{{ '顺排' if d.daYun.forward else '逆排' }} · 起运约 {{ d.daYun.qiyunYears }} 岁 {{ d.daYun.qiyunMonths }} 月</span></h3>
+  <div class="dayun-axis">
+    {% for st in d.daYun.steps %}
+    <div class="dayun-step {% if st.current %}now{% endif %}">
+      <div class="g">{{ st.ganZhi }}</div>
+      <div class="r">{{ st.startYm }} — {{ st.endYm }}</div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+
+{% if s.systemId == 'liuyao' and d.benGua %}
+<div class="card" style="padding-top:26px;">
+  <div class="gua-meta">
+    <div><b>{{ d.benGua.name }}</b>（{{ d.benGua.palace }}宫 · {{ d.benGua.palaceWuxing }}）</div>
+    <div>变 <b>{{ d.bianGua.name }}</b></div>
+    <div>世爻 <b>第{{ d.benGua.shiYao }}爻</b> · 应爻 <b>第{{ d.benGua.yingYao }}爻</b></div>
+    <div>月建 <b>{{ d.yueJian.zhi }}</b> · 日 <b>{{ d.dayGanZhi }}</b></div>
+  </div>
+  <div class="hexagram">
+    {% for line in d.benGua.lines %}
+    {% set yang = line.najia[-1] in ['子','寅','辰','午','申','戌'] %}
+    <div class="yao-line {{ 'yang' if yang else 'yin' }}{% if line.moving %} moving{% endif %}">
+      <span></span><span></span>
+      {% if line.moving %}<span class="mov">●动</span>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  <table>
+    <tr><th>爻位</th><th>纳甲</th><th>六亲</th><th>六神</th><th>世应</th><th>旺衰</th><th>标记</th><th>变爻</th></tr>
+    {% for line in d.benGua.lines %}
+    <tr>
+      <td>{{ line.position }}</td>
+      <td><code>{{ line.najia }}</code></td>
+      <td>{{ line.liuqin }}</td>
+      <td class="muted">{{ line.liushen }}</td>
+      <td>{{ line.role or '—' }}</td>
+      <td>{{ line.wangShuai }}</td>
+      <td class="muted">{{ line.marks|join(' ') or '—' }}</td>
+      <td>{% if line.bianYao %}<code>{{ line.bianYao.ganZhi }}</code>（{{ line.bianYao.liuqin }}）{% else %}—{% endif %}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% if d.fuShen %}
+  <p class="muted small">伏神：{% for f in d.fuShen %}{{ f.liuqin }} <code>{{ f.najia }}</code>（首卦第{{ f.position }}爻）　{% endfor %}</p>
+  {% endif %}
+</div>
+{% endif %}
+
+{% if s.systemId == 'meihua' and d.benGua and d.tiYong %}
+<div class="card" style="padding-top:26px;">
+  <div class="gua-meta">
+    <div>本卦 <b>{{ d.benGua.name }}</b></div>
+    <div>互卦 <b>{{ d.huGua.name }}</b></div>
+    <div>变卦 <b>{{ d.bianGua.name }}</b></div>
+    <div>动爻 <b>第{{ d.movingLine }}爻</b></div>
+  </div>
+  <div class="gua-meta" style="margin-top:10px">
+    <div>体卦 <b class="fn">{{ d.tiYong.body.trigram }}</b>（{{ d.tiYong.body.wuxing }}）</div>
+    <div>用卦 <b>{{ d.tiYong.use.trigram }}</b>（{{ d.tiYong.use.wuxing }}）</div>
+    <div class="fn">{{ d.tiYong.shengKe }}</div>
+  </div>
+</div>
+{% endif %}
+
+{% if s.systemId == 'yijing' and d.lines %}
+<div class="card" style="padding-top:26px;">
+  <div class="gua-meta">
+    <div>卦 <b class="fn">{{ d.guaName }}</b></div>
+    <div>上卦 <b>{{ d.upper.name }}</b>（{{ d.upper.xiang }} · {{ d.upper.wuxing }}）</div>
+    <div>下卦 <b>{{ d.lower.name }}</b>（{{ d.lower.xiang }} · {{ d.lower.wuxing }}）</div>
+    <div>互卦 <b>{{ d.huGua.name }}</b></div>
+  </div>
+  <div class="hexagram" style="width:120px">
+    {% for i in range(6) %}
+    <div class="yao-line {{ 'yang' if d.lines[i] == 1 else 'yin' }}"><span></span><span></span></div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% if s.systemId == 'tarot' and d.cards %}
+<div class="card" style="padding-top:26px;">
+  <div class="gua-meta">
+    <div>牌阵 <b>{{ d.spreadName }}</b></div>
+    <div>随机源 <b class="muted" style="font-size:12px">{{ d.randomSource }}</b></div>
+    {% if d.seedReproducible %}<div class="skychip">可复现</div>{% endif %}
+    {% if d.noReversals %}<div><span class="badge">无逆位模式</span></div>{% endif %}
+  </div>
+  <div class="spread-cards">
+    {% for c in d.cards %}
+    <div class="tcard {% if c.reversed %}reversed{% endif %} {% if d.spread == 'celtic' %}celtic{% endif %}">
+      <span class="ori {{ 'rev' if c.reversed else 'up' }}">{{ c.orientation }}</span>
+      <div class="pos">{{ c.position }}</div>
+      <div class="name">{{ c.nameZh }}</div>
+      <div class="en">{{ c.nameEn }}</div>
+      {% if c.group == '大阿卡纳' %}<div class="pos" style="margin-top:6px;">大阿卡纳</div>{% elif c.element %}<div class="pos" style="margin-top:6px">元素 · {{ c.element }}</div>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% if s.systemId == 'daliuren' and d.siKe %}
+<div class="card" style="padding-top:26px;">
+  <div class="gua-meta">
+    <div>日 <b>{{ d.dayGanZhi }}</b></div>
+    <div>月将 <b>{{ d.yueJiang.name }}（{{ d.yueJiang.zhi }}）</b></div>
+    <div>占时 <b>{{ d.zhanShi }}时</b></div>
+    <div>课体 <b class="fn">{{ d.keTi }}</b></div>
+    <div>{{ d.guiRenType }}</div>
+  </div>
+  <table>
+    <tr><th>四课</th><th>上神</th><th>下神</th><th>克贼</th></tr>
+    {% for k in d.siKe %}
+    <tr><td>{{ k.name }}</td><td>{{ k.up }}（{{ k.upWuxing }}）</td><td>{{ k.down }}（{{ k.downWuxing }}）</td><td>{{ {'贼':'下贼上','克':'上克下'}.get(k.relation, '无克') }}</td></tr>
+    {% endfor %}
+  </table>
+  <h3 style="margin-top:16px">三传</h3>
+  <div class="quick-actions">
+    {% for c in d.sanChuan %}<span class="badge score" style="padding:6px 14px; font-size:13px;">{{ c.label }}·{{ c.zhi }}({{ c.wuxing }}·{{ c.liuqin }})</span>{% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{# ═══════════════════════════════════════════
+   三层：原始 / 结构 / 解读
+   ═══════════════════════════════════════════ #}
+  <div class="layer-tabs" id="report-layers" role="tablist" aria-label="报告层次">
+  <button class="on" id="tab-l3" role="tab" aria-selected="true" aria-controls="l3" data-layer="l3">规则结论与依据</button>
+  <button id="tab-l2" role="tab" aria-selected="false" aria-controls="l2" tabindex="-1" data-layer="l2">结构摘要</button>
+  <button id="tab-l1" role="tab" aria-selected="false" aria-controls="l1" tabindex="-1" data-layer="l1">原始盘面与文本</button>
+</div>
+
+<div class="layer-panel" style="display:none" id="l1" role="tabpanel" aria-labelledby="tab-l1" tabindex="0">
+  <pre>{{ s.calculation.rawText if s.calculation.rawText else d | pretty_json }}</pre>
+  <p class="muted small">此层为引擎输出的原始结构事实（JSON / CLI 原文）；解读一律不改变该层任何字段。</p>
+</div>
+
+<div class="layer-panel" style="display:none" id="l2" role="tabpanel" aria-labelledby="tab-l2" tabindex="0">
+  {% if s.interpretation and not report_error %}
+  <p class="muted small">结构层 = 规则库对盘面要素的体系内读法（旺衰/生克/课体/牌义骨架），非最终断语。</p>
+  {% for conc in s.interpretation.conclusions %}
+  <div class="conclusion">
+    <div class="claim"><span class="polar {{ conc.polarity or 'neutral' }}">{{ {'positive':'吉象','negative':'忌象','neutral':'平','symbolic':'象意'}[conc.polarity or 'neutral'] }}</span>{{ conc.claim }}</div>
+  </div>
+  {% endfor %}
+  {% if s.interpretation.uncertainty %}
+  <div class="notice">{% for u in s.interpretation.uncertainty %}<p>◈ {{ u }}</p>{% endfor %}</div>
+  {% endif %}
+  {% else %}<div class="empty">暂无解读。</div>{% endif %}
+</div>
+
+<div class="layer-panel" id="l3" role="tabpanel" aria-labelledby="tab-l3" tabindex="0">
+  {% if s.interpretation and not report_error %}
+  <div class="card"><p class="lead" style="margin:0;">{{ s.interpretation.summary }}</p></div>
+  {% for conc in s.interpretation.conclusions %}
+  <div class="conclusion">
+    <div class="claim">{{ loop.index }} · {{ conc.claim }}</div>
+    <button type="button" class="evidence-open" data-evidence="{{ loop.index0 }}">
+      为什么 · 依据
+    </button>
+  </div>
+  {% endfor %}
+  {% if s.interpretation.uncertainty %}
+  <h2>两可与不确定点</h2>
+  <ul>{% for u in s.interpretation.uncertainty %}<li class="small">{{ u }}</li>{% endfor %}</ul>
+  {% endif %}
+  {% else %}<div class="empty">暂无解读。</div>{% endif %}
+</div>
+
+{% if traditions %}
+<details class="reading-traditions"><summary>流派分歧与适用边界（{{ traditions|length }} 条）</summary>
+  <p class="muted small">下列规则为本体系的不同读法，不代表每条都在本次结论中采用。采用哪条，以结论的精确规则编号为准；分歧不合并成一个答案。</p>
+  {% for r in traditions %}<article><h3>{{ r.tradition }} <code>{{ r.ruleId }}</code></h3><p>{{ r.statement }}</p>{% for dispute in r.disputes %}<p class="muted small">分歧：{{ dispute }}</p>{% endfor %}<p class="muted small">[{{ r.sourceLevel }}] {{ r.source }}</p></article>{% endfor %}
+</details>
+{% endif %}
+</div>
+</details>
+
+{# ═══════════════════════════════════════════
+   体系局限（必写）+ 免责
+   ═══════════════════════════════════════════ #}
+<span class="sec-tag" id="report-limitation">LIMITATION · 体系局限</span>
+<ul>
+  <li class="small muted">五大未证假设：八字决定论 / 数决定论 / 天人同构 / 变通条款免疫 / 同命不同运（同八字异命反证成立）。</li>
+  {% for lim in s.interpretation.limitations if s.interpretation %}<li class="small">{{ lim }}</li>{% endfor %}
+</ul>
+
+{% if report_error %}<div class="errors">报告校验失败：{{ report_error }}</div>{% endif %}
+
+{# ═══════════════════════════════════════════
+   实验室 · 锁定预测
+   ═══════════════════════════════════════════ #}
+<details class="reading-lab"><summary>想回看现实结果？展开预测实验室</summary>
+<h2>锁定预测 <span class="hint">实验室 · 到期录入真实结果，公开规则裁定</span></h2>
+<div class="card" style="border-left-color: var(--accent);">
+  <p class="muted small" style="margin-bottom:12px">把本盘局中可验证的预测锁定存档；到期后录入真实结果，系统按公开规则裁定命中类型。</p>
+  <form action="/lab/new/{{ s.id }}" method="post">
+    <label>预测内容 *</label>
+    <textarea name="prediction" placeholder="例：倾向有机会进入下一轮，但过程有反复"></textarea>
+    <div style="display:flex; gap:22px; flex-wrap:wrap;">
+      <div style="flex:1; min-width:200px;"><label>预测窗口起 *</label><input type="date" name="window_start" required></div>
+      <div style="flex:1; min-width:200px;"><label>预测窗口止 *</label><input type="date" name="window_end" required></div>
+    </div>
+    <fieldset class="checkbox" style="margin-top:14px;">
+      <label><input type="checkbox" name="blind" value="true"> 盲测模式 —— 锁定后隐藏本盘解读，到期解锁，减少事后代入偏差</label>
+    </fieldset>
+    <button type="submit" class="btn-ghost">锁定预测</button>
+  </form>
+</div>
+
+{% if linked_experiments %}
+<h2>关联预测</h2>
+<table>
+  <tr><th>预测</th><th>窗口</th><th>状态</th><th>判定</th><th></th></tr>
+  {% for e in linked_experiments %}
+  <tr>
+    <td class="small">{{ e.prediction[:40] }}</td>
+    <td class="muted small">{{ e.windowStart }} ~ {{ e.windowEnd }}</td>
+    <td>{{ e.status }}</td>
+    <td>{{ e.verdict or '—' }}</td>
+    <td><a href="/lab/{{ e.id }}">详情 →</a></td>
+  </tr>
+  {% endfor %}
+</table>
+{% endif %}
+
+<p class="muted small" style="margin-top:26px">
+  <a href="/session/{{ s.id }}/report.md" style="color:var(--accent)">查看可追溯 Markdown 报告</a>　·
+  <a href="/research?tab=records" style="color:var(--ink-4)">← 记录与研究</a>
+</p>
+
+</details>
+<div class="disclaimer-box">{{ disclaimer }}</div>
+
+{# ═══════════════════════════════════════════
+   Evidence Drawer（断→因→据→源→等级）
+   ═══════════════════════════════════════════ #}
+<div class="drawer-backdrop" id="evi-backdrop" hidden></div>
+<aside class="evidence-drawer" id="evi-drawer" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="evi-title" hidden>
+  <div class="evi-head">
+    <div>
+      <p class="kicker">EVIDENCE · 凭据</p>
+      <h3 id="evi-title">结论</h3>
+    </div>
+    <button type="button" class="evi-close" data-evi-close aria-label="关闭凭据">×</button>
+  </div>
+  <div class="evi-body">
+    <p class="evi-empty" id="evi-empty">此结论无凭据记录。</p>
+    <div id="evi-content" hidden>
+      <h4>结论</h4>
+      <p class="evi-claim" id="evi-claim"></p>
+
+      <h4>推理链 · Reasoning</h4>
+      <ol id="evi-reasoning"></ol>
+
+      <h4>依据规则 · Rules</h4>
+      <div id="evi-rules"></div>
+
+      <div class="evi-notes">来源等级 S 原典 / A 学术 / B 主流教材 / C 当代实践 / D 网络经验。悬空引用被报告层拒绝出报告。</div>
+
+      <h4>计算事实 · 关键字段</h4>
+      <div id="evi-facts"></div>
+      <details class="evi-raw" id="evi-raw">
+        <summary id="evi-raw-label">展开完整原始引用</summary>
+        <div id="evi-refs"></div>
+      </details>
+    </div>
+  </div>
+</aside>
+
+<noscript><div class="notice">浏览器未启用 JavaScript 时，证据链请见 <a href="/session/{{ s.id }}/report.md">Markdown 报告</a>。</div></noscript>
+
+{# 结构化证据数据（供抽屉渲染；悬空引用已由报告层校验拒绝） #}
+{% if s.interpretation and not report_error %}
+<script type="application/json" id="evidence-data">{{ trace | tojson }}</script>
+{% endif %}
+
+<script>
+(function () {
+  /* ── 三层 Tab ── */
+  var tabs = document.querySelectorAll('.layer-tabs button');
+  function selectLayer(b) {
+    tabs.forEach(function (x) {
+      x.classList.toggle('on', x === b);
+      x.setAttribute('aria-selected', String(x === b));
+      x.tabIndex = x === b ? 0 : -1;
+    });
+    document.querySelectorAll('.layer-panel').forEach(function (p) { p.style.display = 'none'; });
+    document.getElementById(b.dataset.layer).style.display = 'block';
+  }
+  tabs.forEach(function (b) {
+    b.addEventListener('click', function () { selectLayer(b); });
+    b.addEventListener('keydown', function (e) {
+      var idx = Array.prototype.indexOf.call(tabs, b), next = idx;
+      if (e.key === 'ArrowRight') next = (idx + 1) % tabs.length;
+      else if (e.key === 'ArrowLeft') next = (idx + tabs.length - 1) % tabs.length;
+      else if (e.key === 'Home') next = 0;
+      else if (e.key === 'End') next = tabs.length - 1;
+      else return;
+      e.preventDefault(); selectLayer(tabs[next]); tabs[next].focus();
+    });
+  });
+
+  /* ── Evidence Drawer ── */
+  var backdrop = document.getElementById('evi-backdrop');
+  var drawer = document.getElementById('evi-drawer');
+  if (!drawer) return;
+  var dataNode = document.getElementById('evidence-data');
+  var dataset = dataNode ? JSON.parse(dataNode.textContent) : { conclusions: [] };
+  var closeTimer, previousOverflow;
+
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+  function fmtVal(v) {
+    if (v === null || v === undefined) return '—';
+    if (typeof v === 'object') { try { return esc(JSON.stringify(v, null, 1)); } catch (e) { return esc(String(v)); } }
+    return esc(String(v));
+  }
+  function briefText(v, max) {
+    var text = v === null || v === undefined ? '暂无值' : String(v);
+    return text.length > max ? text.slice(0, max) + '…' : text;
+  }
+  function briefValue(v) {
+    if (Array.isArray(v)) {
+      var shown = v.slice(0, 3).map(function (item, i) { return (i + 1) + '. ' + briefValue(item); });
+      return v.length + ' 项' + (shown.length ? '：' + shown.join('；') : '') + (v.length > 3 ? '；其余 ' + (v.length - 3) + ' 项见原始引用' : '');
+    }
+    if (v && typeof v === 'object') {
+      var card = [v.position, v.nameZh || v.nameEn, v.orientation].filter(function (part) { return part !== null && part !== undefined && part !== ''; });
+      if (card.length >= 2) return card.map(function (part) { return briefText(part, 36); }).join(' · ');
+      var fields = Object.entries(v).filter(function (entry) { return entry[1] === null || typeof entry[1] !== 'object'; }).slice(0, 4);
+      return fields.length ? fields.map(function (entry) { return entry[0] + '：' + briefText(entry[1], 38); }).join(' · ') : Object.keys(v).length + ' 个字段，详见原始引用';
+    }
+    return briefText(v, 100);
+  }
+  function openDrawer(idx, opener) {
+    if (!dataset.conclusions[idx]) return;
+    clearTimeout(closeTimer);
+    if (drawer.hidden || drawer.getAttribute('aria-hidden') === 'true') previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    var c = dataset.conclusions[idx];
+    document.getElementById('evi-claim').textContent = c.claim || '';
+    var ol = document.getElementById('evi-reasoning');
+    ol.innerHTML = '';
+    (c.reasoning || []).filter(Boolean).forEach(function (r) {
+      var li = document.createElement('li'); li.textContent = r; ol.appendChild(li);
+    });
+    var rulesBox = document.getElementById('evi-rules');
+    rulesBox.innerHTML = '';
+    (c.rules || []).forEach(function (rr) {
+      var p = document.createElement('p');
+      p.className = 'evi-rule';
+      p.innerHTML = '<code>' + esc(rr.ruleId || '') + '</code> <span class="level-' + esc(rr.sourceLevel || 'C') + '">[' + esc(rr.sourceLevel || '') + ']</span> ' + esc(rr.source || '');
+      rulesBox.appendChild(p);
+      if (rr.statement) { var statement = document.createElement('p'); statement.className = 'small'; statement.textContent = '规则内容：' + rr.statement; rulesBox.appendChild(statement); }
+      if (rr.tradition) { var tradition = document.createElement('p'); tradition.className = 'small muted'; tradition.textContent = '采用流派：' + rr.tradition; rulesBox.appendChild(tradition); }
+      (rr.disputes || []).forEach(function (dispute) { var note = document.createElement('p'); note.className = 'small muted'; note.textContent = '流派分歧：' + dispute; rulesBox.appendChild(note); });
+    });
+    var facts = document.getElementById('evi-facts');
+    facts.innerHTML = '';
+    var refs = document.getElementById('evi-refs');
+    refs.innerHTML = '';
+    (c.calcRefs || []).forEach(function (ref) {
+      var fact = document.createElement('div');
+      fact.className = 'evi-fact' + (ref.exists === false ? ' miss' : '');
+      var path = document.createElement('code');
+      path.textContent = 'calc.' + (ref.path || '');
+      var value = document.createElement('span');
+      value.textContent = ref.exists === false ? '字段不存在（悬空）' : briefValue(ref.value);
+      fact.appendChild(path); fact.appendChild(value); facts.appendChild(fact);
+      var d = document.createElement('pre');
+      d.className = 'evi-ref' + (ref.exists === false ? ' miss' : '');
+      d.innerHTML = 'calc.' + esc(ref.path || '') + ' = ' + (ref.exists === false ? '<b>字段不存在（悬空）</b>' : fmtVal(ref.value));
+      refs.appendChild(d);
+    });
+    if (!(c.calcRefs || []).length) facts.textContent = '此结论未列出计算字段。';
+    document.getElementById('evi-raw-label').textContent = '展开完整原始引用（' + (c.calcRefs || []).length + ' 项）';
+    document.getElementById('evi-raw').open = false;
+    document.getElementById('evi-empty').hidden = true;
+    document.getElementById('evi-content').hidden = false;
+    drawer.querySelector('.evi-body').scrollTop = 0;
+
+    backdrop.hidden = false; drawer.hidden = false;
+    drawer.setAttribute('aria-hidden', 'false');
+    requestAnimationFrame(function () {
+      backdrop.classList.add('show'); drawer.classList.add('show');
+    });
+    if (opener) { window.__eviOpener = opener; }
+    drawer.querySelector('.evi-close').focus();
+  }
+  function closeDrawer() {
+    if (drawer.hidden || drawer.getAttribute('aria-hidden') === 'true') return;
+    backdrop.classList.remove('show'); drawer.classList.remove('show');
+    drawer.setAttribute('aria-hidden', 'true');
+    closeTimer = setTimeout(function () { backdrop.hidden = true; drawer.hidden = true; }, 220);
+    document.body.style.overflow = previousOverflow || '';
+    if (window.__eviOpener) window.__eviOpener.focus();
+  }
+  document.querySelectorAll('[data-evidence]').forEach(function (b) {
+    b.addEventListener('click', function () { openDrawer(Number(b.dataset.evidence), b); });
+  });
+  document.querySelector('[data-evi-close]').addEventListener('click', closeDrawer);
+  backdrop.addEventListener('click', closeDrawer);
+  document.addEventListener('keydown', function (e) {
+    if (drawer.hidden || drawer.getAttribute('aria-hidden') === 'true') return;
+    if (e.key === 'Escape') { e.preventDefault(); closeDrawer(); }
+    if (e.key === 'Tab') {
+      var focusable = Array.from(drawer.querySelectorAll('button, summary, a[href], input, select, textarea, [tabindex]:not([tabindex="-1"])')).filter(function (el) { return !el.disabled && el.getClientRects().length; });
+      var first = focusable[0], last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+  });
+})();
+</script>
+{% endblock %}

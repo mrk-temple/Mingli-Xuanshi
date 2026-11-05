@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}判识 · 命理玄师{% endblock %}
+{% block content %}
+
+<header class="page-head">
+  <p class="kicker">CLASSIFIED</p>
+  <h1>问：<span class="fn">「{{ question_text }}」</span></h1>
+</header>
+<p class="lead">以下推荐仅表达「问题类型 × 信息结构」的匹配度，不含任何准确度承诺。</p>
+
+<div class="card">
+  <div class="stat-row" style="margin:0; border:none;">
+    <div class="stat-cell"><div class="k">问题类型</div><div class="v dim">{{ classification.category }}</div></div>
+    <div class="stat-cell"><div class="k">时间尺度</div><div class="v dim">{{ classification.horizon }}</div></div>
+    {% if classification.hasTiming %}<div class="stat-cell"><div class="k">时态</div><div class="v dim">含应期</div></div>{% endif %}
+    {% if classification.sensitive %}<div class="stat-cell"><div class="k">敏感域</div><div class="v dim">{{ classification.sensitive|join('·') }}</div></div>{% endif %}
+  </div>
+</div>
+
+{% for n in safety_notices %}<div class="notice crisis">{{ n }}</div>{% endfor %}
+{% if anti %}<div class="notice">{{ anti }}</div>{% endif %}
+
+{# ═══════════════ 玄师导航建议（可选插槽 · 无 key 不显示）═══════════════ #}
+{% if recommend %}
+<div class="synthesis-panel">
+  <p class="kicker" style="margin-bottom:8px">NAVIGATION · 玄师建议</p>
+  <p style="margin:0 0 6px">{{ recommend.advice }}</p>
+  {% if recommend.tips %}<ul class="synth-list">{% for t in recommend.tips %}<li>{{ t }}</li>{% endfor %}</ul>{% endif %}
+</div>
+{% elif recommend_note %}
+<div class="notice" style="margin-bottom:6px">{{ recommend_note }}</div>
+{% endif %}
+
+<h2>宜用盘局 <span class="hint">按信息结构匹配度降序</span></h2>
+<ul class="rec-list">
+  {% for r in recommendations %}
+  <li class="rec-row">
+    <span class="rec-rank">{{ '%02d' % loop.index }}</span>
+    <span class="rec-title">{{ r.systemName }}<span class="badge score">匹配 {{ r.score }}</span></span>
+    <span class="rec-reason">{{ r.reason }}</span>
+    <div class="rec-actions">
+      <a href="/run/{{ r.systemId }}?q={{ question_text | urlencode }}">以{{ r.systemName }}起局 →</a>
+      {% if r.systemId == 'compare' %}<a href="/compare?q={{ question_text | urlencode }}">多体系对照 →</a>{% endif %}
+    </div>
+  </li>
+  {% else %}
+  <li class="empty" style="list-style:none;">未上线体系与该问题匹配。可查看<a href="/systems">盘局之林</a>。若为生死危机类求助，请优先联系真实帮助。</li>
+  {% endfor %}
+</ul>
+
+{% if no_compare_hint %}<div class="notice">提示：若想同一问题跨体系相互印证与对照，可走<a href="/compare?q={{ question_text | urlencode }}">多体系对照</a>——注意它只呈收敛/分歧，不铸综合结论。</div>{% endif %}
+{% endblock %}

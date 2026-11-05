@@ -1,0 +1,235 @@
+# 知识库规则文件格式说明
+#
+# 每个体系一个（或多个）YAML 文件。字段：
+#   id: 体系内唯一；同主题不同流派用 "base@tradition" 命名并列
+#   systemId: 所属体系
+#   tradition: 流派标签（默认 mainstream）
+#   statement: 规则内容
+#   keywords: 触发词
+#   appliesTo: 适用场景标签（career/relationship/finance/study/decision/timing/self）
+#   sourceLevel: S 原典 / A 学术 / B 主流教材 / C 当代实践 / D 网络
+#   source: 出处描述（书名+篇名/章节 + 本仓库 reference 路径）
+#   disputes: 与其他流派的冲突说明（不调和，只展示）
+rules:
+  # ── 八字 ──
+  - id: bazi/wangshuai-sanwen
+    systemId: bazi
+    statement: 判旺衰先三问：得令（月令生扶）、得地（通根）、得势（党众）；再三因子质量修正：透干虚实、根气质量、月令权重
+    keywords: [旺衰, 身强, 身弱, 得令, 通根]
+    appliesTo: [self, career]
+    sourceLevel: B
+    source: 渊海子平/滴天髓 衰旺章 / xuan-shu/references/geju-yongshen.md §4
+    notes: 三因子中"透干虚浮+根孤+无印"占两条即使比劫多透也判弱
+    disputes:
+      - 只数数量不评质量是身强身弱翻案的常见根源
+
+  - id: bazi/zhonghe
+    systemId: bazi
+    statement: 五行不可太甚，八字须得中和；太过无克制者贫贱，不及无生扶者夭折
+    keywords: [中和, 五行偏重]
+    sourceLevel: S
+    source: 渊海子平《碧渊赋》/ xuan-shu/references/geju-yongshen.md §4c
+
+  - id: bazi/shishen-duanlv
+    systemId: bazi
+    statement: 十神断律应用前过质量门：逢吉神先看有无破害、逢凶神先看有无制化，不可便言吉凶
+    keywords: [十神, 官星, 七杀, 伤官, 财星, 印绶, 比劫]
+    appliesTo: [career, relationship, finance]
+    sourceLevel: S
+    source: 渊海子平《喜忌篇》/ xuan-shu/references/mingli-program.md §3
+    disputes:
+      - 伤官见官：原律凶；滴天髓修正"有财皆可见官"——两说并存按仲裁第三级取舍
+
+  - id: bazi/dayun-siyun
+    systemId: bazi
+    statement: 大运十年看支、太岁一年看干；行运以日主喜忌为标尺；战冲和好四态定框架
+    keywords: [大运, 流年, 太岁, 应期]
+    appliesTo: [timing, career]
+    sourceLevel: B
+    source: 渊海子平《论大运》、滴天髓岁运章 / xuan-shu/references/shensha-suiyun.md §2
+
+  - id: bazi/tiaohou-first
+    systemId: bazi
+    tradition: qiongtong
+    statement: 寒暖燥湿偏颇时调候为急，压倒扶抑与格局（如冬木喜火、冬水冻木不作喜）
+    keywords: [调候, 寒暖, 燥湿, 冬生, 夏生]
+    sourceLevel: B
+    source: 滴天髓《论用神配气候得失》、穷通宝鉴 / xuan-shu/references/tiaohou.md
+    disputes:
+      - 与渊海子平扶抑取用并存；同一盘两体系取用不同属正常，引用须注明出处
+
+  # ── 六爻 ──
+  - id: liuyao/yongshen-table
+    systemId: liuyao
+    statement: 取用神表——求财/男测感情=妻财；官运/诉讼/女测感情=官鬼；文书/房屋/长辈=父母；同辈/竞争=兄弟；医药/晚辈/消灾=子孙；问己=世爻
+    keywords: [用神, 求财, 官司, 文书, 婚姻]
+    appliesTo: [finance, career, relationship, study]
+    sourceLevel: B
+    source: 《增删卜易》用神章 / xuan-shu/references/liuyao-guide.md §2
+    notes: 取用神错则全卦错——先确认所问事项再取
+
+  - id: liuyao/yongshen-wangshuai
+    systemId: liuyao
+    statement: 用神旺衰以月建为提纲、日辰为主宰：旺相休囚死五态；空破是状态标注不是必凶
+    keywords: [旺衰, 月建, 日辰, 旬空, 月破]
+    sourceLevel: B
+    source: 《增删卜易》/ xuan-shu/references/liuyao-guide.md §3 §6
+
+  - id: liuyao/yuanji-choushen
+    systemId: liuyao
+    statement: 生克链：父母→兄弟→子孙→妻财→官鬼→父母（生）；用神弱看原神有力否，用神旺防忌神来克
+    keywords: [原神, 忌神, 仇神]
+    sourceLevel: B
+    source: 《增删卜易》/ xuan-shu/references/liuyao-guide.md §5
+
+  - id: liuyao/shiying
+    systemId: liuyao
+    statement: 世=我应=彼；世应生克定顺逆：应生世吉、世生应耗、应克世逆、比和平
+    keywords: [世爻, 应爻]
+    sourceLevel: B
+    source: 六爻通行断法 / xuan-shu/references/liuyao-guide.md §4
+
+  - id: liuyao/dongbian
+    systemId: liuyao
+    statement: 动爻为事之机；变爻回头生吉回头克凶；化进神主进、化退神主退
+    keywords: [动爻, 变爻, 回头生, 回头克, 进神, 退神]
+    sourceLevel: B
+    source: 《增删卜易》动变章 / xuan-shu/references/liuyao-guide.md §4
+
+  - id: liuyao/liupai@zibei-yang
+    systemId: liuyao
+    tradition: zi-yang
+    statement: 铜钱阴阳"字=阳"流派变体（默认主流为字=阴、背=阳）
+    keywords: [铜钱, 字, 背]
+    sourceLevel: C
+    source: 流派调查 / xuan-shu/scripts/liuyao.py --zi-as-yang
+    disputes:
+      - 主流约定字=阴背=阳；两派起卦结果可不同，本系统显式选择并声明
+
+  # ── 梅花 ──
+  - id: meihua/tiyong-shengke
+    systemId: meihua
+    statement: 体用总诀——用生体吉、用克体凶、体生用泄、体克用费力、比和平；动爻所在卦为用卦
+    keywords: [体用, 生克, 动爻]
+    appliesTo: [decision, finance, relationship]
+    sourceLevel: S
+    source: 《梅花易数》体用总诀 / xuan-shu/references/duangua-guide.md §2
+
+  - id: meihua/hubian-gua
+    systemId: meihua
+    statement: 本卦看当下、互卦看过程、变卦看结果；变卦五行定最终趋势
+    keywords: [互卦, 变卦, 趋势]
+    sourceLevel: S
+    source: 《梅花易数》/ xuan-shu/references/duangua-guide.md §1-§2
+
+  # ── 大六壬 ──
+  - id: daliuren/keti-theme
+    systemId: daliuren
+    statement: 课体定事之性质——元首顺利、重审反复宜详审、知一宜专一、涉害艰辛迟滞、伏吟静守、返吟动荡
+    keywords: [课体, 元首, 重审, 涉害, 伏吟, 返吟]
+    sourceLevel: B
+    source: 《六壬大全》卷五 / xuan-shu/references/daliuren-guide.md §3
+
+  - id: daliuren/sanchuan
+    systemId: daliuren
+    statement: 初传起因、中传过程、末传结局；三传顺生主顺畅、逆克主阻滞；传生干吉、传克干凶
+    keywords: [三传, 初传, 中传, 末传]
+    sourceLevel: B
+    source: 《六壬大全》/ xuan-shu/references/daliuren-guide.md §2
+
+  - id: daliuren/shehai@zhuliu
+    systemId: daliuren
+    tradition: mainstream
+    statement: 涉害深浅计数采用主流法——上神顺行归本家，数途中被上神所克之地支
+    keywords: [涉害]
+    sourceLevel: B
+    source: 《六壬大全》通行说 / xuan-shu/references/daliuren-guide.md §7
+    disputes:
+      - 异说"涉归本家/数受克者"未采用
+
+  # ── 小六壬 ──
+  - id: xiaoliuren/duangong
+    systemId: xiaoliuren
+    statement: 断宫定主调（大安守成/留连迟滞/速喜趁势/赤口慎言/小吉和合/空亡收手），月宫看起因日宫看过程
+    keywords: [断宫, 大安, 留连, 速喜, 赤口, 小吉, 空亡]
+    appliesTo: [decision, timing, career]
+    sourceLevel: C
+    source: 小六壬通行本断辞 / xuan-shu/references/xiaoliuren-guide.md §2-§4
+    disputes:
+      - 古法与总数累加法相差 2 位；小吉五行主流作水个别作木——均显式声明
+
+  - id: xiaoliuren/gufa@gufa
+    systemId: xiaoliuren
+    tradition: gufa
+    statement: 古法三步重锚：月上起日、日上起时，断宫=(m+d+h-3) mod 6+1
+    keywords: [古法, 三步重锚]
+    sourceLevel: C
+    source: 通行掌诀 / xuan-shu/scripts/xiaoliuren.py
+
+  - id: xiaoliuren/gufa@sum
+    systemId: xiaoliuren
+    tradition: sum-mode
+    statement: 总数累加法变体：断宫=(m+d+h-1) mod 6+1，与古法相差 2 位，非主流
+    keywords: [总数累加]
+    sourceLevel: D
+    source: 网络流传变体 / xuan-shu/scripts/xiaoliuren.py --sum
+    disputes:
+      - 与古法不可混用；本系统默认古法
+
+  # ── 塔罗 ──
+  - id: tarot/wubu-jiedu
+    systemId: tarot
+    statement: 五步解读：定基调→逐张读→牌间关系→合成结论→收尾邀请反馈；解读是对话不是宣判
+    keywords: [解读, 牌阵, 基调]
+    sourceLevel: B
+    source: RWS 通行解读法 / xuan-shu/references/tarot-guide.md §2
+
+  - id: tarot/paiyi-sucha
+    systemId: tarot
+    statement: 牌义三层组合：花色主题 × 数字位阶 × 宫廷角色；逆位读作能量受阻/内在化，不读作凶
+    keywords: [牌义, 逆位, 正位, 权杖, 圣杯, 宝剑, 星币]
+    appliesTo: [relationship, decision, career]
+    sourceLevel: C
+    source: RWS 韦特体系通行牌义 / xuan-shu/references/tarot-meanings.md
+    disputes:
+      - 元素对应版本：宝剑西方属风，本库映射五行取金（锋锐之象），另有流派取风→木——引用必须声明版本
+
+  # ── 易经义理 ──
+  - id: yijing/jiegua-kuangjia
+    systemId: yijing
+    statement: 解任意卦爻辞按序：先判位（二五中位阴阳当位）→再察时（盛极必衰）→后看谦（谦卦六爻无凶）
+    keywords: [解卦, 判位, 察时, 谦]
+    sourceLevel: S
+    source: 《易经》系辞下 9 章 / xuan-shu/references/yijing-yili.md §4
+
+  - id: yilinx/藏器待时
+    systemId: yijing
+    statement: 君子藏器于身，待时而动
+    keywords: [等待, 时机]
+    appliesTo: [timing, career]
+    sourceLevel: S
+    source: 《易经》系辞下 5 章 / xuan-shu/references/yijing-yili.md §3
+
+  - id: yilinx/居功处谦
+    systemId: yijing
+    statement: 卑以自牧，有功不伐
+    keywords: [功劳, 谦虚]
+    appliesTo: [career, self]
+    sourceLevel: S
+    source: 《易经》谦卦 / xuan-shu/references/yijing-yili.md §3
+
+  - id: yilinx/盈满时守戒
+    systemId: yijing
+    statement: 盛极必衰，思患预防、知进知退
+    keywords: [鼎盛, 成功]
+    appliesTo: [career, finance]
+    sourceLevel: S
+    source: 《易经》丰卦彖传、乾文言 / xuan-shu/references/yijing-yili.md §3
+
+  - id: yilinx/困境守志
+    systemId: yijing
+    statement: 困而不失其所亨；受压制则用晦而明
+    keywords: [困境, 逆境]
+    appliesTo: [career, self]
+    sourceLevel: S
+    source: 《易经》困卦、明夷 / xuan-shu/references/yijing-yili.md §3

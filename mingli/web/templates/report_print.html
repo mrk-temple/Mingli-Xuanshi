@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}盘局报告 · {{ s.systemId }}{% endblock %}
+{% block content %}
+
+<header class="page-head" style="display:flex; align-items:flex-end; justify-content:space-between; flex-wrap:wrap; gap:14px;">
+  <div>
+    <p class="kicker">REPORT · 可打印报告</p>
+    <h1 style="margin:0">{{ s.calculation.systemId }} 盘局报告 <span class="fn">&#9728;</span></h1>
+  </div>
+  <div style="display:flex; gap:10px;">
+    <button type="button" class="btn btn-ghost btn-sm print-page">打印 / 存 PDF</button>
+    <a class="btn btn-ghost btn-sm" href="/session/{{ s.id }}/export.ai.json">下载 AI 数据（JSON）</a>
+    <a class="btn btn-ghost btn-sm" href="/session/{{ s.id }}">返回盘局页</a>
+  </div>
+</header>
+
+{% if report_error %}
+<div class="errors">报告生成失败：{{ report_error }}</div>
+{% else %}
+<div class="report-doc">
+  <pre class="report-pre">{{ md }}</pre>
+</div>
+
+<div class="disclaimer-box" style="margin-top:24px;">
+  页面导出动作（打印 / 下载）为本地操作；导出内容沿用盘局页同款免责声明与体系局限。
+</div>
+{% endif %}
+{% endblock %}
+
+{% block head %}
+<style>
+  @media print {
+    .sidebar, .topbar, .bottom-nav, .site-footer,
+    .print-page, .page-head a, .page-head button, .disclaimer-box { display: none !important; }
+    body { background: #fff; }
+    .report-doc { background: #fff; color: #000; border: 0; padding: 0; }
+    .page-head h1 { color: #000; }
+    .app-shell { display: block; }
+    .page { min-height: auto; }
+    .main { padding: 0; }
+    .report-pre {
+      white-space: pre-wrap; word-break: break-word;
+      font-size: 13px; line-height: 1.7; border: none; padding: 0; color: #000;
+      background: transparent;
+    }
+  }
+  .report-doc {
+    border: 1px solid var(--line); border-radius: var(--radius-lg);
+    background: var(--surface); padding: var(--space-5) var(--space-6);
+  }
+</style>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    var button = document.querySelector('.print-page');
+    if (button) button.addEventListener('click', function () { window.print(); });
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}实验室 · 命理玄师{% endblock %}
+{% block content %}
+
+{% set V = {'pending':'待验证','evaluated':'已判定','no-outcome':'无法验证'} %}
+{% set VD = {'exact-hit':'完全命中','partial-hit':'部分命中','direction-hit':'方向命中','timing-hit':'时间命中','miss':'未命中','ambiguous':'模糊','no-outcome':'无法验证'} %}
+
+<header class="page-head">
+  <p class="kicker">LABORATORY · 个人研究日志</p>
+  <h1>术数实验室</h1>
+</header>
+<p class="lead">创建预测 → 锁定 → 等待真实结果 → 录入 → 按公开规则裁定。系统没有自动放宽口径的路径——判定规则全部可查看，命中率不是指标，可验证性才是。</p>
+
+<div class="ledger">
+  <span>记录 <span class="led-num">{{ experiments|length }}</span></span>
+  <span>已判定 <span class="led-num">{{ stats.n }}</span></span>
+  {% for k, label in [('exact-hit','完全命中'),('direction-hit','方向命中'),('partial-hit','部分命中'),('timing-hit','时间命中'),('miss','未命中'),('ambiguous','模糊'),('no-outcome','无法验证')] %}
+  <span class="led-pill">{{ label }} {{ stats.verdictCounts[k] }}</span>
+  {% endfor %}
+</div>
+<p class="muted small">{{ stats.note }}</p>
+
+{% if experiments %}
+<h2>预测记录 <span class="hint">Research Log · 逐条可溯源</span></h2>
+<ol class="lab-log">
+  {% for e in experiments %}
+  <li class="lab-row">
+    <time class="lab-date">{{ e.lockedAt }}</time>
+    <div class="lab-system">
+      <span class="sysdot {{ 'east' if e.systemId != 'tarot' else 'west' }}"></span>
+      <span class="badge {{ e.status }}">{{ V[e.status] }}</span>
+      {% if e.blind %}<span class="muted small">◈ 盲测</span>{% endif %}
+      {% if e.verdict %}<span class="badge {% if e.verdict in ['exact-hit','partial-hit','direction-hit','timing-hit'] %}active{% elif e.verdict == 'miss' %}region-east{% else %}planned{% endif %}">{{ VD[e.verdict] }}</span>{% endif %}
+    </div>
+    <div class="lab-q">{{ e.systemId }} · {{ e.questionText }}</div>
+    <blockquote class="lab-pred" style="border:none; padding:0; margin:2px 0 0; font-family:var(--font-body); font-size:var(--text-sm);">{{ e.prediction }}</blockquote>
+    <div class="lab-meta">
+      <span class="muted small">判窗 {{ e.windowStart }} ~ {{ e.windowEnd }}</span>
+      <a class="lab-go" href="/lab/{{ e.id }}">详情 →</a>
+    </div>
+  </li>
+  {% endfor %}
+</ol>
+{% else %}
+<h2 style="margin-top:34px;">预测记录</h2>
+<div class="empty">暂无预测记录。从任意盘局结果页「锁定预测」开始，或<a href="/compare">用多体系对照</a>一次锁定一组。</div>
+{% endif %}
+
+<div class="disclaimer-box">
+  诚实约束：判定完全由你录入的真实结果 + 公开规则表合成；系统绝不为了「看起来准」把 miss 裁成 direction-hit。
+  此处统计为你个人实验样本，不构成对任何术数体系有效性的科学评价。
+</div>
+{% endblock %}

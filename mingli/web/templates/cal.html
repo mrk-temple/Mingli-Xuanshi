@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}历法 · 万年历 · 命理玄师{% endblock %}
+{% block content %}
+
+<header class="page-head">
+  <p class="kicker">CALENDER · PERPETUAL</p>
+  <h1>历法·万年历 <span class="fn">干支 · 节气 · 月令</span></h1>
+</header>
+<p class="lead">纯确定性的历法查询——全部由引擎计算（干支/月令/生肖/农历/节气），不含任何吉凶判断。用于核对盘局边界、找节气交节点、查时辰干支。</p>
+
+{# ═══════════════ 日期导航 ═══════════════ #}
+<div class="card" style="padding:14px 20px; margin-bottom:16px; display:flex; gap:14px; align-items:center; flex-wrap:wrap;">
+  <a class="btn btn-ghost btn-sm" href="/cal?date={{ prev }}">‹ {{ '年%04d-月%02d' % (prev[:4]|int, prev[5:7]|int) }}</a>
+  <form action="/cal" method="get" style="display:flex; gap:8px; align-items:center;">
+    <input type="date" name="date" value="{{ date }}" style="max-width:180px;">
+    <button type="submit" class="btn btn-sm">查</button>
+  </form>
+  <a class="btn btn-ghost btn-sm" href="/cal?date={{ next }}">{{ '年%04d-月%02d' % (next[:4]|int, next[5:7]|int) }} ›</a>
+</div>
+
+{# ═══════════════ 当日详情 ═══════════════ #}
+<span class="sec-tag">DAY · {{ date }}</span>
+<div class="card">
+  <div class="stat-row" style="margin:0; border:none;">
+    <div class="stat-cell"><div class="k">公历</div><div class="v dim">{{ detail.solar }}</div></div>
+    <div class="stat-cell"><div class="k">农历</div><div class="v dim">{{ detail.lunar }}</div></div>
+    <div class="stat-cell"><div class="k">节气</div><div class="v dim">{{ detail.jieqi or '—' }}</div></div>
+    <div class="stat-cell"><div class="k">干支</div><div class="v dim">{{ detail.year_ganzhi }}年 · {{ detail.month_ganzhi }}月 · {{ detail.day_ganzhi }}日</div></div>
+    <div class="stat-cell"><div class="k">月令</div><div class="v dim">{{ detail.yueling }}</div></div>
+    <div class="stat-cell"><div class="k">生肖</div><div class="v dim">{{ detail.shengri }}</div></div>
+  </div>
+</div>
+
+{# ═══════════════ 本月干支一览 ═══════════════ #}
+<span class="sec-tag">MONTH · {{ year }}年{{ month }}月 逐日</span>
+<div class="card">
+  <table class="cal-table">
+    <thead>
+      <tr><th>日</th><th>日干支</th><th>农历</th><th>节气</th></tr>
+    </thead>
+    <tbody>
+      {% for r in month_rows %}
+      <tr class="{{ 'sel' if r.day == detail.day else ('today' if r.solar == today else '') }}">
+        <td>{{ r.day }}</td>
+        <td>{{ r.day_ganzhi }}</td>
+        <td class="small">{{ r.lunar }}</td>
+        <td class="small {% if r.jieqi %}jieqi{% endif %}">{{ r.jieqi or '' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="notice"><strong>说明：</strong>此处干支为普通历法干支（非真太阳时修正），用于核对与当日排盘一致；六爻·梅花·大六壬等"时"法起局用「随机/数字/时刻」即可，本页不产生任何断语。月令以节气交替为准，交节当天起的月份属"下月"。</div>
+{% endblock %}

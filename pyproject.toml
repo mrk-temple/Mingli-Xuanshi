@@ -1,0 +1,55 @@
+[project]
+name = "mingli-xuanshi"
+version = "0.4.0"
+description = "命理玄师 —— 东西方术数研究与实验工作台"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.110",
+    "uvicorn>=0.29",
+    "jinja2>=3.1",
+    "pydantic>=2.6",
+    "pyyaml>=6.0",
+    "lunar_python>=1.3",
+    "anthropic>=0.34",   # 远程 API 接入（/settings 或 ANTHROPIC_API_KEY 后启用）
+    "openai>=1.40",      # MiMo / DeepSeek / OpenAI 兼容服务
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "httpx>=0.27",   # fastapi TestClient 依赖
+    "ruff>=0.4",
+    "mypy>=1.9",
+    "types-PyYAML",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM"]
+# E501 行长由 formatter 处理；scripts 目录保持原样不检查
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"xuan-shu/**" = ["ALL"]
+"mingli/web/app.py" = ["B008"]  # FastAPI Form() 默认参数为框架惯例，非误用
+
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
+check_untyped_defs = true
+# 旧脚本目录不做类型检查
+exclude = ["xuan-shu/", "__pycache__"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.setuptools.packages.find]
+include = ["mingli*"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"

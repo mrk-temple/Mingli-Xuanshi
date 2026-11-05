@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %}{{ provider.name }} · 命理玄师{% endblock %}
+{% block body_class %} class="page-form"{% endblock %}
+{% block content %}
+
+<header class="page-head">
+  <p class="kicker"><a href="/generate">术数生成</a> / 开始一次解读</p>
+  <h1>{{ provider.name }}</h1>
+</header>
+<p class="lead">{% if provider.id == 'tarot' %}用牌面作为思考线索，整理当前的感受、选择与下一步。无需出生资料。{% elif provider.id == 'bazi' %}输入出生日期，了解传统命盘的符号结构；它不能决定你的人生或具体事情的成败。{% else %}根据所选方式输入信息，查看白话阅读指引与传统规则的观察角度。{% endif %}</p>
+
+
+
+{% if errors %}<div class="errors" role="alert">请检查输入：{% for e in errors %}<p>{{ e }}</p>{% endfor %}</div>{% endif %}
+
+{% if is_natal and profiles %}
+<div class="card" style="padding:12px 20px; margin-bottom:16px;">
+  <label for="profile-load" style="margin-bottom:4px;">从命盘库载入 <span class="muted small">（下拉即跳转，可在下方继续改）</span></label>
+  <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+    <select id="profile-load" onchange="if(this.value) location.href=this.value;" style="max-width:340px;">
+      <option value="">选择一份出生档案…</option>
+      {% for p in profiles %}
+      <option value="/run/{{ provider.id }}?profile={{ p.id }}&q={{ q | urlencode }}">{{ p.name }} · {{ p.year }}年{{ p.month }}月{{ p.day }}日{% if p.hour %} {{ p.hour }}时{% endif %}{% if p.gender %} · {{ p.gender }}{% endif %}</option>
+      {% endfor %}
+    </select>
+    <a href="/charts" class="btn btn-ghost btn-sm">管理命盘库 →</a>
+  </div>
+</div>
+{% endif %}
+
+<div class="form-workspace">
+<form action="/generate/{{ provider.id }}" method="post" class="generation-form">
+  <div class="form-heading"><span class="kicker">一 · 写下提问</span><h2>你想理清什么？</h2><p>写出具体情况和你能做的选择。问题也可留空，先查看结构。</p></div>
+  <div class="form-fields">
+    <div class="form-field form-field-wide">
+      <label for="research-question">本次问题（可选）</label>
+      <input type="text" id="research-question" name="q" value="{{ q }}" placeholder="例如：正在考虑换工作，我应先确认哪些条件？" maxlength="1200">
+      <div class="question-examples" aria-label="问题示例"><span>试着这样问</span><button type="button" data-question="我正在考虑换工作，应该先确认哪些现实条件？">工作选择</button><button type="button" data-question="我想改善一段关系，应该先厘清什么？">关系沟通</button><button type="button" data-question="我最近学习效率不高，可以先做什么调整？">学习状态</button></div>
+    </div>
+
+  {% if mode_options %}
+  <div class="form-field form-field-wide">
+    <label for="mode">起局方式</label>
+    <select name="mode" id="mode">
+      {% for m in mode_options %}<option value="{{ m.value }}">{{ m.label }}</option>{% endfor %}
+    </select>
+    <p class="ask-meta" id="mode-hint">按上表选择后，在下栏填入对应输入；随机方式可填种子复现。</p>
+  </div>
+  {% endif %}
+
+  {% for f in schema %}
+    {% if f.name != 'mode' %}
+    <div class="form-field {% if f.type == 'bool' %}form-field-wide{% endif %}">
+    <label for="{{ f.name }}">{{ f.label }}{% if f.required %} *{% endif %}</label>
+    {% if f.type == 'select' %}
+      <select name="{{ f.name }}" id="{{ f.name }}">
+        {% for o in f.options %}<option value="{{ o }}" {{ 'selected' if prefill.get(f.name, f.get('default', 'three' if provider.id == 'tarot' and f.name == 'spread' else '')) == o }}>{{ {'single':'一张牌 · 一个反思线索', 'three':'三张牌 · 过去 / 现在 / 未来视角', 'celtic':'十张牌 · 凯尔特十字'}.get(o, o) }}</option>{% endfor %}
+      </select>
+    {% elif f.type == 'bool' %}
+      <fieldset class="checkbox"><label><input type="checkbox" name="{{ f.name }}" id="{{ f.name }}" value="true"> 启用</label></fieldset>
+    {% else %}
+      <input type="{{ 'number' if f.type in ('int','float') else 'text' }}"
+             name="{{ f.name }}" id="{{ f.name }}"
+             value="{{ prefill.get(f.name) if prefill.get(f.name) is not none else '' }}" placeholder="{{ f.label }}">
+    {% endif %}
+    </div>
+    {% endif %}
+  {% endfor %}
+  </div>
+
+  <div class="form-submit-row"><p id="generation-status" role="status">结果包含白话回答、现实建议与可展开的计算依据。</p><button type="submit" class="generate-submit">{% if provider.id == 'tarot' %}抽牌并查看解读{% else %}生成盘面与解读{% endif %} →</button></div>
+</form>
+<aside class="form-companion" aria-label="解读说明">
+  <div class="form-companion-art" aria-hidden="true">{% include "partials/xiang_mark.html" %}</div>
+  <h2>一问，一观照</h2>
+  <p>无需先懂术语。结果会先给白话，再让你按需查看依据。</p>
+  <ol><li><b>一</b><span>先回应你提出的问题</span></li><li><b>二</b><span>给出可尝试的现实行动</span></li><li><b>三</b><span>展开盘面、规则与分歧</span></li></ol>
+  <p class="companion-boundary">传统文化与自省参考<br>不预言成败，不替你决定</p>
+</aside>
+</div>
+
+<details class="reading-method"><summary>了解这种观察方式与适用边界</summary>
+<p>{{ reading_intros.get(provider.id, provider.strengths) }}</p>
+<div class="report-meta">
+  <span class="rm-item">类别<b>{{ provider.category|join(' · ') }}</b></span>
+  <span class="rm-item">区域<b>{{ '东方' if provider.region=='east' else ('西方' if provider.region=='west' else '跨文化') }}</b></span>
+  <span class="rm-item">引擎<b>{{ provider.id }}</b></span>
+  <span class="rm-item">状态<b class="badge active" style="font-size:10px;">已上线</b></span>
+</div>
+
+<p class="provider-limitation">体系局限：{{ provider.limitations }}</p>
+</details>
+
+<div class="disclaimer-box">
+  这是传统文化与自省工具，不是科学预测。排盘、起卦和抽牌由本机计算；AI 只转述已有规则结论。
+  健康、投资、法律等重大决定请依据现实事实和专业意见。
+</div>
+<script>
+(function () {
+  var form = document.querySelector('.generation-form'), input = document.getElementById('research-question');
+  document.querySelectorAll('[data-question]').forEach(function (button) { button.addEventListener('click', function () { input.value = button.dataset.question; input.focus(); }); });
+  var submit = form.querySelector('[type="submit"]'), initial = submit.textContent;
+  form.addEventListener('submit', function () { submit.disabled = true; submit.textContent = '正在生成解读…'; form.setAttribute('aria-busy', 'true'); document.getElementById('generation-status').textContent = '正在计算盘面并整理白话解读；模型不可用时会显示离线指引，请勿重复提交。'; });
+  window.addEventListener('pageshow', function () { submit.disabled = false; submit.textContent = initial; form.removeAttribute('aria-busy'); });
+})();
+</script>
+{% endblock %}
+

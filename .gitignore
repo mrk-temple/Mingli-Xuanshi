@@ -1,0 +1,60 @@
+# 运行时数据（会话/实验 JSON）
+data/
+
+# Python
+__pycache__/
+*.pyc
+*.egg-info/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+
+# 编译
+build/
+dist/
+
+# 虚拟环境
+.venv/
+venv/
+
+# 编辑器
+.idea/
+.vscode/
+
+# Public source distribution: local secrets, state and generated output
+.env
+.env.*
+!.env.example
+!.env.*.example
+api.txt
+*.pem
+*.pfx
+*.key
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+*.sqlite3-*
+*.log
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.tmp/
+.workspace/
+.claude/
+.dsh-vision-router/
+node_modules/
+dist/
+out/
+*.tsbuildinfo
+**/target/
+**/.godot/
+**/bin/
+**/obj/
+pytest-cache-files-*/
+Projects.workspace*/
+*.blend1

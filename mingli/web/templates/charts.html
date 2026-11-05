@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}命盘库 · 命理玄师{% endblock %}
+{% block content %}
+
+<header class="page-head">
+  <p class="kicker">MY CHARTS</p>
+  <h1>个人命盘库 <span class="fn">My Charts</span></h1>
+</header>
+<p class="lead">保存一份出生档案，在<strong>命局型体系</strong>（八字等）与<strong>多体系对照 / 综合分析</strong>里一键复用——省去每次重复填写出生时刻，让"同一命盘反复做实验"更顺手。命盘档案只存本机 <code>data/profiles</code>。</p>
+
+{% if error %}<div class="errors">{{ error }}</div>{% endif %}
+
+{# ═══════════════ 已存命盘 ═══════════════ #}
+<span class="sec-tag">PROFILES · 已存命盘</span>
+{% if profiles %}
+<div class="profiles-grid">
+  {% for p in profiles %}
+  <div class="card profile-card">
+    <h3 class="profile-name">{{ p.name }}
+      <span class="badge active" style="font-size:10px;">{{ p.year }}年{{ p.month }}月{{ p.day }}日{% if p.hour %} {{ p.hour }}时{% endif %}{% if p.gender %} · {{ p.gender }}{% endif %}</span>
+    </h3>
+    {% if p.note %}<p class="muted small">{{ p.note }}</p>{% endif %}
+    <div class="profile-actions">
+      <a class="btn btn-sm" href="/generate/bazi?profile={{ p.id }}">八字 →</a>
+      <a class="btn btn-sm" href="/compare?profile={{ p.id }}&q=">对照 →</a>
+      <a class="btn btn-sm" href="/analyze?profile={{ p.id }}&q=">分析 →</a>
+      <form action="/charts/{{ p.id }}/delete" method="post" style="display:inline;"
+        onsubmit="return confirm('确认删除这个命盘档案？')">
+        <button type="submit" class="btn btn-ghost btn-sm">删除</button>
+      </form>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty">还没有命盘档案。先在下方新建一份，或在任意页面顶部的「从命盘库载入」里顺手保存。</div>
+{% endif %}
+
+{# ═══════════════ 新建命盘 ═══════════════ #}
+<span class="sec-tag">NEW · 新建命盘档案</span>
+<div class="card">
+  <form action="/charts" method="post" style="max-width:640px;">
+    <label>档案名</label>
+    <input type="text" name="name" placeholder="如：我的命盘 / 甲方" style="max-width:280px;">
+
+    <label>出生资料 <span class="muted small">（公历；时与经度可选）</span></label>
+    <div style="display:flex; gap:14px; flex-wrap:wrap;">
+      <input type="number" name="year" required min="1900" max="2100" placeholder="年" style="max-width:100px;">
+      <input type="number" name="month" required min="1" max="12" placeholder="月" style="max-width:80px;">
+      <input type="number" name="day" required min="1" max="31" placeholder="日" style="max-width:80px;">
+      <input type="number" name="hour" min="0" max="23" placeholder="时(0-23)" style="max-width:100px;">
+      <select name="gender" style="max-width:110px;">
+        <option value="">性别</option>
+        <option value="男">男</option>
+        <option value="女">女</option>
+      </select>
+      <input type="number" step="any" name="longitude" placeholder="经度(可选)" style="max-width:120px;">
+    </div>
+
+    <label>备注 <span class="muted small">（可选，如供对照时的注意事项）</span></label>
+    <input type="text" name="note" style="max-width:420px;">
+
+    <button type="submit">保存命盘 →</button>
+  </form>
+</div>
+
+<div class="notice"><strong>为何要命盘库？</strong>同一份出生资料，八字（命局框架）与未来的紫微斗数等命局型体系要反复使用。把它存成档案，才能在「多体系对照 / 综合分析」里不重填——这正是本平台"可复现、可对照、可验证"工作流的一环。</div>
+{% endblock %}

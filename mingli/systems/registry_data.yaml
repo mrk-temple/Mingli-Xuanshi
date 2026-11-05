@@ -1,0 +1,105 @@
+# 未实现/部分实现体系登记 —— 诚实原则（不假装支持）
+# status: knowledge-only = 有知识无可靠计算器；planned = 已规划未实现
+# enabled: true 的体系必须以 Provider 实例注册，不得只出现在此文件
+systems:
+  # ---- 东方：第二阶段 ----
+  - id: qimen
+    name: 奇门遁甲
+    region: east
+    category: [moment]
+    status: planned
+    strengths: 行动/方向/时机三要素的结构化推演
+    limitations: 排盘规则流派分歧大，需先确定转盘/飞盘与置闰口径
+    note: 计划接入；未实现前 UI 如实标注
+
+  - id: ziwei
+    name: 紫微斗数
+    region: east
+    category: [natal]
+    status: knowledge-only
+    strengths: 命宫主星与十二宫人事框架
+    limitations: 已有基本盘阅读知识（命宫/三方四正/四化/大限）；安星诀版本差异（中州派/三合/飞星）与准确排盘引擎仍需验证，故不宣称可算
+    note: 知识-only；待可靠确定性安星引擎后升级 active
+
+  - id: zeri
+    name: 择日 / 黄历
+    region: east
+    category: [timing]
+    status: planned
+    strengths: 事件时间选择
+    note: 计划接入
+
+  - id: fengshui
+    name: 风水 / 堪舆
+    region: east
+    category: [spatial]
+    status: planned
+    strengths: 空间形势分析
+    limitations: 需区分传统解释与现代证据
+    note: 计划接入；仅知识参考起步
+
+  - id: taiyi
+    name: 太乙神数
+    region: east
+    category: [moment]
+    status: planned
+    strengths: 三式之一，年岁灾祥推演
+    note: 远期计划
+
+  # ---- 西方：第三阶段 ----
+  - id: western-astrology
+    name: 西洋占星（Natal）
+    region: west
+    category: [natal]
+    status: planned
+    strengths: 星盘结构：星座/宫位/相位的人格与人生主题框架
+    limitations: 需要天文星历库（如 Swiss Ephemeris）
+    note: 第三阶段接入
+
+  - id: horary-astrology
+    name: 卜卦占星（Horary）
+    region: west
+    category: [moment]
+    status: planned
+    strengths: 当下问题结构的古典判断
+    note: 第三阶段接入
+
+  - id: numerology
+    name: 西方数秘术（Numerology）
+    region: west
+    category: [numeric]
+    status: planned
+    strengths: Pythagorean/Chaldean 数字命理（流派公式不得混用）
+    note: 第三阶段接入
+
+  - id: lenormand
+    name: 雷诺曼卡
+    region: west
+    category: [randomized]
+    status: planned
+    strengths: 36 卡直白组合读法
+    note: 第三阶段接入
+
+  - id: runes
+    name: 卢恩符文（Elder Futhark）
+    region: west
+    category: [randomized]
+    status: planned
+    strengths: 24 符文抽测
+    note: 第三阶段接入
+
+  - id: geomancy-west
+    name: 西方地占术（Geomancy）
+    region: west
+    category: [moment, randomized]
+    status: planned
+    strengths: 16 地占符与 12 宫盘
+    note: 第三阶段接入
+
+  - id: jyotish
+    name: 吠陀占星（Jyotish）
+    region: west
+    category: [natal]
+    status: planned
+    strengths: 恒星黄道 Rāśi/Nakshatra/Dasha
+    note: 远期计划

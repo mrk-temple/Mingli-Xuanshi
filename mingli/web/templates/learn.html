@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}术数课堂 · 命理玄师{% endblock %}
+{% block content %}
+
+<header class="page-head">
+  <p class="kicker">KNOWLEDGE · CLASSROOM</p>
+  <h1>术数课堂 <span class="fn">可读规则库</span></h1>
+</header>
+<p class="lead">本页把<strong>规则库</strong>按体系组织成可读的条目——每条断律都带<strong>来源等级（S/A/B/C/D）</strong>与出处，是你验证"解读从哪来"的依据。这里只列规则事实，不编教程话术；<strong>流派有争议的规则并列展示，不强行调和</strong>。</p>
+
+<div class="card" style="padding:14px 20px; margin-bottom:16px;">
+  <div class="stat-row tight">
+    <div class="stat-cell"><div class="k">等级</div><div class="v dim"><span class="level-S">S 原典</span> · <span class="level-A">A 学术</span> · <span class="level-B">B 主流教材</span> · <span class="level-C">C 当代实践</span> · <span class="level-D">D 网络</span></div></div>
+    <div class="stat-cell"><div class="k">在线体系</div><div class="v dim">{{ active_count }}</div></div>
+  </div>
+</div>
+
+{# ═══════════════ 按体系 ═══════════════ #}
+{% for b in blocks %}
+<span class="sec-tag">SYSTEM · {{ b.name }}</span>
+<div class="card">
+  {% if b.status != 'active' %}
+  <div class="notice" style="margin-bottom:10px; padding:8px 12px;">
+    <span class="badge planned">{{ b.status }}</span> 只有结构化的<strong>知识</strong>，暂无可靠确定性算盘引擎——本平台如实标注，不假装支持（见<a href="/systems">术数库</a>）。
+  </div>
+  {% endif %}
+  <p class="muted small">{{ b.strengths }}</p>
+  {% for r in b.rules %}
+  <div class="rule-item">
+    <div class="rule-head">
+      <code class="rule-id">{{ r.id }}</code>
+      <span class="badge level-{{ r.sourceLevel }}">{{ r.sourceLevel }}</span>
+      {% if r.tradition != 'mainstream' %}<span class="badge planned">流派 · {{ r.tradition }}</span>{% endif %}
+    </div>
+    <div class="rule-statement">{{ r.statement }}</div>
+    <div class="rule-source muted small"><span class="level-{{ r.sourceLevel }}">[{{ r.sourceLevel }}]</span> {{ r.source }}</div>
+    {% if r.keywords %}<div class="muted small">触发：{{ r.keywords|join(' · ') }}</div>{% endif %}
+    {% if r.disputes %}
+    <div class="notice" style="margin-top:8px; padding:8px 12px;">
+      <strong>争议：</strong>
+      {% for d in r.disputes %}<p>{{ d }}</p>{% endfor %}
+    </div>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty">规则库暂无条目（体系按「已知但未实现」如实登记，见<a href="/systems">术数库</a>）。</div>
+{% endfor %}
+
+<div class="notice"><strong>不在本页的内容：</strong>这里是可追溯的规则条目，不含「教学第一步」式的自由发挥。要深度学习某个体系，看其体系局限与来源即可——本平台刻意不把玄学话术包装成权威教程。</div>
+{% endblock %}

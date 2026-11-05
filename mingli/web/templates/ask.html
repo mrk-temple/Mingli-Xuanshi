@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}问事 · 命理玄师{% endblock %}
+{% block content %}
+
+<header class="page-head">
+  <p class="kicker">WHAT DO YOU WANT TO EXPLORE?</p>
+  <h1>请问一事</h1>
+</header>
+<p class="lead">以自然语言道来。系统识别问题之类型、时间尺度与所涉敏感域，按<strong>信息模型匹配度</strong>推适宜盘局——非「孰者最准」。</p>
+
+{% if error %}<div class="notice crisis">{{ error }}</div>{% endif %}
+
+<form data-pending-message="正在分析问题并寻找合适的观察方式。" class="ask-form" action="/ask" method="post">
+  <label for="q" class="visually-hidden">所问事项</label>
+  <textarea id="q" name="text" placeholder="例：我最近是否适合换工作？／这次面试能进下一轮吗？／今年财运如何？">{% if text %}{{ text }}{% endif %}</textarea>
+  <p class="ask-meta">系统将识别 → 问题类型 · 时间尺度 · 敏感域 · 信息结构匹配</p>
+  <button type="submit">开始分析 →</button>
+</form>
+
+<div class="ask-examples">
+  <span class="muted">示 例</span>
+  <a href="javascript:void(0)" onclick="document.getElementById('q').value='我最近要不要换工作？'">换工作</a>
+  <a href="javascript:void(0)" onclick="document.getElementById('q').value='这次面试能不能过？'">面试成败</a>
+  <a href="javascript:void(0)" onclick="document.getElementById('q').value='我和对象合不合得来？'">感情</a>
+  <a href="javascript:void(0)" onclick="document.getElementById('q').value='明年考研应该报哪个学校？'">考研选择</a>
+  <a href="javascript:void(0)" onclick="document.getElementById('q').value='什么时候会遇到好的机会？'">应期</a>
+</div>
+{% endblock %}

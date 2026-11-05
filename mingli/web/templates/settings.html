@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+{% block title %}设置 · 命理玄师{% endblock %}
+{% block content %}
+
+<header class="page-head">
+  <p class="kicker">SETTINGS · 工作台配置</p>
+  <h1>设置 <span class="fn">Settings</span></h1>
+</header>
+
+{# ═══════════════ 1. AI / API 接入 ═══════════════ #}
+<span class="sec-tag">AI · 模型接入</span>
+<p class="muted small" style="margin:0 0 10px;">排盘/起卦/抽牌全部由<strong>确定性引擎在本机计算</strong>；大模型只用于「玄师对话」「综合分析」等
+<strong>可选解释层</strong>——本平台从不下载、从不运行任何本地部署模型。</p>
+
+<div class="card">
+  <div class="stat-row" style="margin:0; border:none;">
+    <div class="stat-cell"><div class="k">接入状态</div>
+      <div class="v dim">{% if has_key %}<span class="badge active">已配置</span> {{ key_masked }}{% else %}<span class="badge planned">未配置</span>{% endif %}</div></div>
+    <div class="stat-cell"><div class="k">Provider</div><div class="v dim">{{ providers.get(provider, {}).get('label', provider) }}</div></div>
+    <div class="stat-cell"><div class="k">模型</div><div class="v dim">{{ model }}</div></div>
+    <div class="stat-cell"><div class="k">单体系解释器</div>
+      <div class="v dim">{% if interpreter == 'llm' %}LLM 插槽{% else %}规则引擎（离线）{% endif %}</div></div>
+  </div>
+  {% if key_from_file %}
+  <p class="muted small" style="margin-top:10px">已连接指定的本地凭据文件；密钥未复制到设置文件。</p>
+  {% elif key_from_env %}
+  <p class="muted small" style="margin-top:10px">当前有效 Key 来自环境变量 <code>ANTHROPIC_API_KEY</code>（未存入本页）。</p>
+  {% elif not has_key %}
+  <p class="muted small" style="margin-top:10px">未配置 Key 时，玄师对话与 LLM 插槽自动省略，系统回落确定性规则引擎——对照、验证等能力不受影响。</p>
+  {% endif %}
+</div>
+
+<div class="card">
+  <form action="/settings" method="post" style="max-width:640px;">
+    <input type="hidden" name="action" value="save">
+
+    <label>Provider</label>
+    <select name="provider" id="provider-select" style="max-width:420px;">
+      {% for pid, p in providers.items() %}
+      <option value="{{ pid }}" {{ 'selected' if provider == pid }}>{{ p.label }}{% if pid == 'anthropic' %}（默认）{% elif pid == 'deepseek' %}（OpenAI 兼容）{% else %}（自定义端点）{% endif %}</option>
+      {% endfor %}
+    </select>
+
+    <label>API Key <span class="muted small" id="key-hint"></span></label>
+    <input type="password" name="api_key" autocomplete="off"
+      placeholder="{% if has_key %}留空则保留当前 Key{% else %}粘贴你的 API Key{% endif %}"
+      style="max-width:420px;">
+    <p class="muted small">只保存在本机 <code>data/settings.json</code>（已 gitignore），不会提交 Git；页面只显示掩码。</p>
+
+    <label id="baseurl-label">Base URL <span class="muted small">（OpenAI 兼容端点；DeepSeek 已预填官方地址）</span></label>
+    <input type="text" name="base_url" value="{{ base_url }}" placeholder="https://…/v1" style="max-width:420px;">
+
+    <label>模型 <span class="muted small" id="model-hint"></span></label>
+    <input type="text" name="model" value="{{ model }}" style="max-width:420px;">
+
+    <div style="display:flex; gap:14px; align-items:center; margin-top:8px; flex-wrap:wrap;">
+      <button type="submit" class="btn">保存配置</button>
+      <button type="button" class="btn btn-ghost" id="test-conn">测试连接</button>
+      <span id="test-result" class="small" aria-live="polite"></span>
+    </div>
+  </form>
+  <form action="/settings" method="post" style="margin-top:10px;"
+    onsubmit="return confirm('确认清除本页保存的 API 配置？将回到仅环境变量状态。')">
+    <input type="hidden" name="action" value="clear">
+    <button type="submit" class="btn btn-ghost btn-sm">清除已保存的 Key</button>
+  </form>
+</div>
+
+{# ═══════════════ 2. 外观 ═══════════════ #}
+<span class="sec-tag">APPEARANCE · 界面主题</span>
+<div class="card">
+  <p class="muted small" style="margin-bottom:8px">纯本地偏好，存于浏览器 <code>localStorage</code>，不上传、与会话无关。</p>
+  <fieldset class="checkbox" id="theme-options">
+    <label><input type="radio" name="theme" value="system"> 跟随系统</label>
+    <label><input type="radio" name="theme" value="light"> 浅色 · 旧纸</label>
+    <label><input type="radio" name="theme" value="dark"> 深色 · 深夜研究室</label>
+  </fieldset>
+</div>
+
+{# ═══════════════ 3. 模型行为 ═══════════════ #}
+<span class="sec-tag">BEHAVIOR · 模型行为</span>
+<div class="card">
+  <form action="/settings" method="post" style="max-width:640px;">
+    <input type="hidden" name="action" value="save">
+    <label>单体系解读解释器</label>
+    <fieldset class="checkbox">
+      <label><input type="radio" name="interpreter" value="rule-engine" {{ 'checked' if interpreter != 'llm' }}> 规则引擎（离线 · 默认 · 可测试）</label>
+      <label><input type="radio" name="interpreter" value="llm" {{ 'checked' if interpreter == 'llm' }}> AI 白话解读（只转述规则结论；失败自动显示离线指引）</label>
+    </fieldset>
+
+    <label>回答风格 <span class="muted small">（影响玄师对话与 LLM 解读的行文深度，不影响计算）</span></label>
+    <fieldset class="checkbox">
+      {% for sk, sl in styles.items() %}
+      <label><input type="radio" name="style" value="{{ sk }}" {{ 'checked' if style == sk }}> {{ sl }}</label>
+      {% endfor %}
+    </fieldset>
+    <button type="submit" class="btn">保存行为设置</button>
+  </form>
+</div>
+
+{# ═══════════════ 4. 数据 ═══════════════ #}
+<span class="sec-tag">DATA · 本地数据管理</span>
+<div class="card">
+  <div class="stat-row tight" style="border:none;">
+    <div class="stat-cell"><div class="k">盘局记录</div><div class="v">{{ data_stats.sessions }}</div></div>
+    <div class="stat-cell"><div class="k">预测实验</div><div class="v">{{ data_stats.experiments }}</div></div>
+    <div class="stat-cell"><div class="k">讨论串</div><div class="v">{{ data_stats.chats }}</div></div>
+    <div class="stat-cell"><div class="k">命盘档案</div><div class="v">{{ data_stats.profiles }}</div></div>
+  </div>
+  <div class="quick-actions" style="margin-top:12px;">
+    <a href="/settings/data/export" download>导出全部研究数据（JSON）</a>
+  </div>
+  <div style="display:flex; gap:14px; margin-top:16px; flex-wrap:wrap;">
+    <form action="/settings/data/clear-sessions" method="post"
+      onsubmit="return confirm('删除全部盘局记录？（实验判定链保留）不可恢复。')">
+      <button type="submit" class="btn btn-ghost btn-sm link-danger">清空盘局记录</button>
+    </form>
+    <form action="/settings/data/clear-chats" method="post"
+      onsubmit="return confirm('删除全部玄师对话？不可恢复。')">
+      <button type="submit" class="btn btn-ghost btn-sm link-danger">清空对话记录</button>
+    </form>
+  </div>
+</div>
+
+<div class="notice"><strong>关于「本地 LLM」：</strong>本平台从未内置、也从不下载任何本地部署的模型。可算者交给确定性引擎、可释者交给规则库、可对照者并排展示、可验证者留给实验——大模型仅在可选的解释/对话层出现，且严格受「事实与解读分离」与「断语可追溯」约束，无法绕过。</div>
+
+<script>
+(function () {
+  var PROVIDER_META = {
+    mimo: { keyHint: "（小米 MiMo 签发的 Key）", model: "mimo-v2.6-flash", showBase: true },
+    anthropic: { keyHint: "（Anthropic，形如 sk-ant-…）", model: "claude-opus-4-8", showBase: false },
+    deepseek: { keyHint: "（DeepSeek，形如 sk-…）", model: "deepseek-chat", showBase: true },
+    "openai-compatible": { keyHint: "（你的自定义服务签发的 Key）", model: "", showBase: true }
+  };
+  var sel = document.getElementById('provider-select');
+  var keyHint = document.getElementById('key-hint');
+  var baseLabel = document.getElementById('baseurl-label');
+  function apply() {
+    var m = PROVIDER_META[sel.value] || PROVIDER_META.anthropic;
+    if (keyHint) keyHint.textContent = m.keyHint;
+    if (baseLabel) baseLabel.style.display = m.showBase ? '' : 'none';
+  }
+  sel.addEventListener('change', apply);
+  apply();
+
+  // 测试连接：发最小请求验证 Key/端点
+  var btn = document.getElementById('test-conn');
+  var out = document.getElementById('test-result');
+  btn.addEventListener('click', function () {
+    out.textContent = '测试中…'; out.style.color = '';
+    fetch('/settings/test', { method: 'POST' })
+      .then(function (r) { return r.json().then(function (j) { return { code: r.status, j: j }; }); })
+      .then(function (res) {
+        if (res.j && res.j.ok) {
+          out.textContent = '✓ 连通 — 模型回复：' + (res.j.reply || '(空)');
+          out.style.color = 'var(--accent)';
+        } else {
+          out.textContent = '✗ 失败：' + ((res.j && res.j.error) || ('HTTP ' + res.code));
+          out.style.color = '#b3261e';
+        }
+      })
+      .catch(function (e) {
+        out.textContent = '✗ 请求失败：' + e;
+        out.style.color = '#b3261e';
+      });
+  });
+
+  // 主题偏好（与 base.html 共用同一 localStorage 键）
+  var root = document.documentElement;
+  var radios = document.querySelectorAll('#theme-options input[name="theme"]');
+  try { var saved = localStorage.getItem('mingli-theme'); } catch (e) { saved = null; }
+  radios.forEach(function (r) { if (r.value === (saved || 'system')) r.checked = true; });
+  radios.forEach(function (r) {
+    r.addEventListener('change', function () {
+      var t = r.value;
+      if (t === 'system') {
+        t = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+        try { localStorage.removeItem('mingli-theme'); } catch (e) {}
+      } else {
+        try { localStorage.setItem('mingli-theme', t); } catch (e) {}
+      }
+      root.setAttribute('data-theme', t);
+    });
+  });
+})();
+</script>
+{% endblock %}

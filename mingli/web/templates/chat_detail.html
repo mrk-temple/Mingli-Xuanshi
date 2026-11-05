@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block title %}玄师对话 · {{ t.title or t.id }} · 命理玄师{% endblock %}
+{% block head %}
+<style>
+  /* 对话页三栏布局 —— 研究对象 / 聊天流 / 证据面板（窄屏折叠） */
+  .chat-layout { display: grid; grid-template-columns: 260px minmax(0,1fr); gap: 24px; align-items: start; }
+  .chat-side { position: sticky; top: 76px; }
+  .chat-obj { border: 1px solid var(--line); border-radius: 6px; padding: 14px 16px; background: var(--paper-2, transparent); }
+  .chat-obj h3 { margin: 0 0 4px; font-size: var(--text-md); }
+  .chat-obj .q { font-size: var(--text-sm); color: var(--ink-2); margin: 6px 0 10px; }
+  .ctx-list { list-style: none; padding: 0; margin: 10px 0 0; font-size: var(--text-xs); color: var(--ink-3); }
+  .ctx-list li { margin: 3px 0; }
+  .ctx-list li::before { content: "✓ "; color: var(--accent); }
+  .chat-stream { display: flex; flex-direction: column; gap: 14px; min-height: 40vh; }
+  .msg { max-width: 92%; padding: 12px 16px; border-radius: 8px; line-height: 1.75; white-space: pre-wrap; word-break: break-word; }
+  .msg.user { align-self: flex-end; background: var(--accent-dim, rgba(163,62,40,.08)); border: 1px solid var(--line); }
+  .msg.assistant { align-self: flex-start; background: var(--paper-2, rgba(127,127,127,.06)); border: 1px solid var(--line); }
+  .msg .who { display:block; font-size: var(--text-xs); color: var(--ink-4); margin-bottom: 4px; letter-spacing: .08em; }
+  .chat-input-row { display: flex; gap: 10px; margin-top: 18px; align-items: flex-start; }
+  .chat-input-row textarea { flex: 1; min-height: 72px; resize: vertical; }
+  .chat-empty-hint { color: var(--ink-3); font-size: var(--text-sm); text-align: center; margin: 48px 0; }
+  .sugg { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-bottom: 10px;}
+  .sugg button { font-size: var(--text-xs); }
+  @media (max-width: 1060px) { .chat-layout { grid-template-columns: 1fr; } .chat-side { position: static; } }
+</style>
+{% endblock %}
+{% block content %}
+
+<div class="chat-layout">
+  {# ▍左 · 当前研究对象 #}
+  <aside class="chat-side">
+    <div class="chat-obj">
+      <p class="kicker" style="margin-bottom:6px;">研究对象</p>
+      <h3>{{ s.systemId }} 盘局</h3>
+      <p class="q">所问：<strong class="fn">{{ s.question.text }}</strong></p>
+      <a class="btn btn-ghost btn-sm" href="/session/{{ s.id }}" style="width:100%; text-align:center;">查看完整盘局 →</a>
+      <ul class="ctx-list">
+        <li>输入快照（{{ s.calculation.inputSnapshot|length }} 项）</li>
+        <li>确定性计算结果（{{ s.calculation.data|length }} 个字段组）</li>
+        {% if s.interpretation %}<li>结构化解释（{{ s.interpretation.conclusions|length }} 条结论）</li>{% endif %}
+        <li>规则库条目已随上下文提供</li>
+      </ul>
+      <p class="muted" style="font-size:var(--text-xs); margin-top:10px;">AI 不重算术数——它只读以上事实与规则。</p>
+    </div>
+    <form data-pending-message="正在整理回复，请稍候。" action="/chat/{{ t.id }}/delete" method="post" onsubmit="return confirm('删除这条讨论串？')" style="margin-top:12px;">
+      <button type="submit" class="btn btn-ghost btn-sm" style="width:100%;">删除本讨论串</button>
+    </form>
+  </aside>
+
+  {# ▍中 · 聊天区 #}
+  <section class="chat-main">
+    {% if ctx_error %}<div class="errors">盘局上下文加载失败：{{ ctx_error }}</div>{% endif %}
+
+    <div class="layer-tabs" style="margin-bottom:16px;">
+      <span class="on">{{ t.title or '对话' }}</span>
+      <a class="btn btn-ghost btn-sm" href="/chat">← 全部讨论串</a>
+    </div>
+
+    <div class="chat-stream" id="stream">
+      {% if not t.messages %}
+      <div class="chat-empty-hint">
+        <p>向玄师提问。例如：</p>
+        <div class="sugg">
+          <button type="button" class="btn btn-ghost btn-sm" data-fill="为什么会得到这个解读？请逐步讲清推理链。">为什么会这样解释？</button>
+          <button type="button" class="btn btn-ghost btn-sm" data-fill="结合这个盘面，把我的问题重新分析一遍，说清楚每一步依据。">结合我的问题重新分析</button>
+          <button type="button" class="btn btn-ghost btn-sm" data-fill="这个判断有哪些不确定性和流派分歧？">有哪些不确定性？</button>
+          <button type="button" class="btn btn-ghost btn-sm" data-fill="帮我把这次分析变成一个可以验证的预测：写明观察窗口和判据。">变成可验证的预测</button>
+          <button type="button" class="btn btn-ghost btn-sm" data-fill="如果我选择 A 方案会怎样？从盘面结构看需要注意什么？">如果我选择 A 呢？</button>
+        </div>
+      </div>
+      {% endif %}
+      {% for m in t.messages %}
+      <div class="msg {{ m.role }}">
+        <span class="who">{{ '你' if m.role == 'user' else '玄师' }}</span>{{ m.text }}
+      </div>
+      {% endfor %}
+    </div>
+
+    {% if not llm_ready %}
+    <div class="notice">未配置 API Key——发送前请先到 <a href="/settings">设置页</a> 配置远程模型接入。</div>
+    {% endif %}
+
+    <form data-pending-message="正在整理回复，请稍候。" class="chat-input-row" action="/chat/{{ t.id }}/send" method="post">
+      <textarea name="message" required placeholder="基于当前盘局继续追问……（Enter 提交）"
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey&&!event.isComposing&&event.keyCode!==229){event.preventDefault();this.form.requestSubmit();}"></textarea>
+      <button type="submit" class="btn">送出 →</button>
+    </form>
+
+    <p class="muted" style="font-size:var(--text-xs); margin-top:8px;">回复为体系内解释语言，非事实断言；不构成专业建议。
+      需要新的一局请回<a href="/generate">术数生成</a>。</p>
+  </section>
+</div>
+
+<script>
+// 示例问题一键填入
+document.querySelectorAll('[data-fill]').forEach(function (b) {
+  b.addEventListener('click', function () {
+    var ta = document.querySelector('.chat-input-row textarea');
+    if (ta) { ta.value = b.getAttribute('data-fill'); ta.focus(); }
+  });
+});
+// 有新消息时滚到底
+var stream = document.getElementById('stream');
+if (stream && document.querySelectorAll('.msg').length) {
+  window.scrollTo(0, document.body.scrollHeight);
+}
+</script>
+
+<div class="disclaimer-box">{{ disclaimer }}</div>
+{% endblock %}

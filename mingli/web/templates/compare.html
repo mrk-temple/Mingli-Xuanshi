@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+{% block title %}多体系对照 · 命理玄师{% endblock %}
+{% block content %}
+
+<header class="page-head">
+  <p class="kicker">SAME QUESTION LAB</p>
+  <h1>多体系对照 <span class="fn">Same Question Lab</span></h1>
+</header>
+<p class="lead">同一问题，多体系各自<strong>独立起算、独立解读</strong>，最后<strong>并排对照</strong>——只察收敛 / 分歧 / 不可比较，不铸综合结论。</p>
+
+{% if anti %}<div class="notice">{{ anti }}</div>{% endif %}
+{% if error %}<div class="errors">{{ error }}</div>{% endif %}
+
+{% if has_runs %}
+{# ═══════════════ 对照结果 ═══════════════ #}
+<span class="sec-tag">COMPARISON · 对照主表</span>
+<div class="card" style="border-left-color: var(--gold-dim);">
+  <p>问：<strong class="fn">「{{ q }}」</strong>
+    <span class="badge cat">类型 {{ cmp.classification.category }}</span>
+    <span class="badge cat">尺度 {{ cmp.classification.horizon }}</span>
+  </p>
+  <div class="legend">
+    <span class="l-conv">收敛：多体系主倾向方向一致</span>
+    <span class="l-div">分歧：主倾向方向相左</span>
+    <span class="l-sym">象意：仅象征/自省视角，不与吉凶并论</span>
+  </div>
+</div>
+
+<div class="cmp-grid">
+  <div class="cmp-head col">盘局</div><div class="cmp-head col">主倾向</div><div class="cmp-head col">主结论摘要</div>
+  {% for r in cmp.runs %}
+  <div class="cmp-head row">{{ r.systemName }}</div>
+  <div class="cmp-cell">
+    {% if r.skipped %}<span class="muted">未参与（{{ r.skip_reason }}）</span>{% else %}
+    <span class="badge {{ 'active' if r.polarity == 'positive' else ('score' if r.polarity == 'negative' else 'planned') }}">
+      {{ {'positive':'吉象','negative':'忌象','neutral':'平','symbolic':'象意'}[r.polarity] }}
+    </span>
+    {% endif %}
+  </div>
+  <div class="cmp-cell">
+    {% if r.skipped %}<span class="muted small">{{ r.skip_reason }}</span>
+    {% else %}<span class="small">{{ r.summary[:120] }}</span>{% endif %}
+  </div>
+  {% endfor %}
+</div>
+
+<span class="sec-tag">CONVERGENCE · 收敛点</span>
+{% if cmp.convergence %}
+<ul>{% for c in cmp.convergence %}<li class="small converged" style="margin:4px 0">◈ {{ c }}</li>{% endfor %}</ul>
+{% else %}<div class="empty">本轮对照未见跨体系方向收敛。</div>{% endif %}
+
+<span class="sec-tag">DIVERGENCE · 分歧点</span>
+{% if cmp.divergence %}
+<ul>{% for d in cmp.divergence %}<li class="small divergent" style="margin:4px 0">◈ {{ d }}</li>{% endfor %}</ul>
+{% else %}<div class="empty">本轮对照未现方向相左（分歧可能藏在细节，见逐体系展开）。</div>{% endif %}
+
+<span class="sec-tag">NON-COMPARABLE · 不可比较项</span>
+<ul>
+  {% for n in cmp.nonComparable %}<li class="small symbolic" style="margin:4px 0">◈ {{ n }}</li>{% endfor %}
+</ul>
+
+{# ═══════════════ 玄师综合分析（第二层 · 可选插槽）═══════════════ #}
+{% if synthesis %}
+<span class="sec-tag">SYNTHESIS · 玄师综合分析</span>
+<div class="synthesis-panel">
+  <p class="muted small" style="margin-bottom:14px">结合你的问题「<strong class="fn">{{ q }}</strong>」，把各体系已给出的结论交叉读成可行动的话。以下为解释性综合，不含任何综合占比/评分；依据仍可逐条溯源。</p>
+
+  <h4 class="synth-h">各体系怎么说 · 针对你的问题</h4>
+  {% for r in synthesis.responses %}
+  <div class="synth-row">
+    <span class="synth-tag">{{ r.systemName }}</span>
+    <span class="synth-body">{{ r.answer }}</span>
+  </div>
+  {% endfor %}
+
+  {% if synthesis.divergence %}
+  <h4 class="synth-h">分歧怎么理解</h4>
+  <ul class="synth-list">
+    {% for d in synthesis.divergence %}<li>{{ d }}</li>{% endfor %}
+  </ul>
+  {% endif %}
+
+  <h4 class="synth-h">给你的行动建议（可验证）</h4>
+  <div class="synth-action">{{ synthesis.action }}</div>
+
+  {% if synthesis.notes %}
+  <p class="muted small" style="margin-top:14px">{% for n in synthesis.notes %}◈ {{ n }}<br>{% endfor %}</p>
+  {% endif %}
+</div>
+{% elif synthesis_note %}
+<span class="sec-tag">SYNTHESIS · 玄师综合分析</span>
+<div class="notice" style="margin-bottom:6px">{{ synthesis_note }}</div>
+{% endif %}
+
+<h2>逐体系展开 <span class="hint">每条结论可溯源</span></h2>
+{% for r in cmp.runs if not r.skipped %}
+<div class="card">
+  <h3>{{ r.systemName }}
+    <span class="badge {{ 'active' if r.polarity == 'positive' else ('score' if r.polarity == 'negative' else 'planned') }}">{{ r.polarity }}</span>
+  </h3>
+  <p class="muted small">{{ r.strengths }}</p>
+  {% for conc in r.conclusions %}
+  <div class="conclusion">
+    <div class="claim"><span class="polar {{ conc.polarity or 'neutral' }}">{{ {'positive':'吉象','negative':'忌象','neutral':'平','symbolic':'象意'}[conc.polarity or 'neutral'] }}</span>{{ conc.claim }}</div>
+    <details>
+      <summary>▸ 何以见得</summary>
+      <ol>{% for rr in conc.reasoning %}{% if rr %}<li>{{ rr }}</li>{% endif %}{% endfor %}</ol>
+      <ul>
+        {% for rr in conc.rules %}<li class="rule-ref"><code>{{ rr.ruleId }}</code> <span class="level-{{ rr.sourceLevel }}">[{{ rr.sourceLevel }}]</span> {{ rr.source }}</li>{% endfor %}
+      </ul>
+    </details>
+  </div>
+  {% endfor %}
+</div>
+{% endfor %}
+
+{% if cmp.notes %}<div class="muted small" style="margin-top:20px">{% for n in cmp.notes %}<p>◈ {{ n }}</p>{% endfor %}</div>{% endif %}
+
+<div class="notice"><strong>严禁如此读：</strong>本对照不产出「多术一致，故大势必成」式综合结论——各体系信息结构、理论前提、断语口径各不相同，所谓一致性只是象征层面的趋同观察，系统刻意不将同向条数折算成任何占比数字。</div>
+{% endif %}
+
+{# ═══════════════ 发起对照（表单始终可见）═══════════════ #}
+<span class="sec-tag">LAUNCH · {% if has_runs %}调整重跑{% else %}发起对照{% endif %}</span>
+<div class="card">
+  <form data-pending-message="正在分别计算并整理对照结果，请勿重复提交。" action="/compare" method="post">
+    <label>问题 *</label>
+    <textarea name="q" required placeholder="例：我今年适合换城市吗？">{% if q %}{{ q }}{% endif %}</textarea>
+
+    <label>出生资料 <span class="muted small">（供命局型体系，可选）</span></label>
+    <select onchange="if(this.value) location.href=this.value;" style="margin-bottom:8px; max-width:340px;">
+      <option value="">从命盘库载入…</option>
+      {% for p in profiles %}
+      <option value="/compare?profile={{ p.id }}&q={{ q | urlencode }}">{{ p.name }} · {{ p.year }}年{{ p.month }}月{{ p.day }}日{% if p.hour %} {{ p.hour }}时{% endif %}{% if p.gender %} · {{ p.gender }}{% endif %}</option>
+      {% endfor %}
+    </select>
+    <div style="display:flex; gap:14px; flex-wrap:wrap;">
+      <input type="number" name="birth_year" placeholder="年" class="birth" style="max-width:110px;" value="{{ birth_year or '' }}">
+      <input type="number" name="birth_month" placeholder="月" class="birth" style="max-width:90px;" value="{{ birth_month or '' }}">
+      <input type="number" name="birth_day" placeholder="日" class="birth" style="max-width:90px;" value="{{ birth_day or '' }}">
+      <input type="number" name="birth_hour" placeholder="时" class="birth" style="max-width:90px;" value="{{ birth_hour or '' }}">
+      <select name="birth_gender" style="max-width:110px;">
+        <option value="">{{ '性别（大运）' if birth_gender else '性别' }}</option>
+        <option value="男" {{ 'selected' if birth_gender == '男' }}>男</option>
+        <option value="女" {{ 'selected' if birth_gender == '女' }}>女</option>
+      </select>
+    </div>
+
+    <label>选择起局体系 *</label>
+    <fieldset class="checkbox">
+      {% for p in active_systems %}
+      <label><input type="checkbox" name="systems" value="{{ p.id }}"
+        {% if not has_runs or p.id in selected %}checked{% endif %}> {{ p.name }}</label>
+      {% endfor %}
+    </fieldset>
+
+    <label>随机种子 <span class="muted small">（moment 系自动起局共用一个可复现种子）</span></label>
+    <input type="number" name="seed" value="{{ seed or '7' }}" style="max-width:120px;">
+
+    <button type="submit">各体系独立起局 →</button>
+  </form>
+</div>
+
+<div class="disclaimer-box">
+  对照严格要求逐体系独立：同一问题先分别计算与解读，再行对照；只有多条线指向同一象征倾向才标注「收敛」，互相矛盾如实呈现为分歧。此处输出均为体系内规则语言，非事实断言。
+</div>
+{% endblock %}

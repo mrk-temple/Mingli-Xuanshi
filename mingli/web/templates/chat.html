@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}玄师对话 · 命理玄师{% endblock %}
+{% block content %}
+
+<header class="page-head">
+  <p class="kicker">DISCUSS · 上下文增强讨论</p>
+  <h1>玄师对话</h1>
+</header>
+<p class="lead">这不是通用聊天框——每个对话都<strong>绑定一个已生成的术数结果</strong>。
+AI 只基于该盘局的确定性计算、规则库与你的问题展开讨论，<strong>不重算任何术数事实</strong>；
+上下文没有的，它会明确说「信息不足」。</p>
+
+{% if not llm_ready %}
+<div class="notice">玄师对话需要远程大模型支持。当前未配置 API Key——
+  <a href="/settings">到设置页配置 →</a>　确定性计算与规则解读不受影响。</div>
+{% endif %}
+
+<div class="chat-entry">
+  <span class="muted small">从哪里开始？</span>
+  {% if threads %}
+  <a href="/research?tab=records" class="btn btn-ghost btn-sm">先去生成一个盘局 →</a>
+  {% else %}
+  <a href="/generate" class="btn btn-sm">先去术数生成 →</a>
+  {% endif %}
+</div>
+
+<h2>讨论串 <span class="hint">Threads · 按创建时间倒序</span></h2>
+{% if threads %}
+<ol class="timeline">
+  {% for row in threads %}
+  <li class="timeline-item">
+    <time class="tl-time">{{ row.thread.createdAt[:16] }}</time>
+    <div class="tl-main">
+      <span class="sysdot {{ 'east' if row.systemName != 'tarot' else 'west' }}"></span>
+      <a href="/chat/{{ row.thread.id }}">{{ row.thread.title or '(无题)' }}</a>
+      <span class="badge score">{{ row.thread.messages|length }} 条</span>
+    </div>
+    <div class="tl-sub">
+      <span class="muted small">{{ row.systemName }} · {{ row.questionText[:44] }}{% if row.questionText|length > 44 %}…{% endif %}</span>
+      <form action="/chat/{{ row.thread.id }}/delete" method="post" style="display:inline"
+        onsubmit="return confirm('删除这条讨论串？')">
+        <button type="submit" class="link-danger btn-tiny">删除</button>
+      </form>
+      <a href="/chat/{{ row.thread.id }}">打开 →</a>
+    </div>
+  </li>
+  {% endfor %}
+</ol>
+{% else %}
+<div class="empty">还没有讨论串。在任意盘局结果页点「与玄师讨论」，即可带着完整证据链开始对话。</div>
+{% endif %}
+
+<div class="disclaimer-box">
+  对话铁律：AI 只消费已产生的计算结果与规则库条目，绝不重新排盘/起卦/抽牌，也不编造盘面细节；
+  需要新的一局时，它会请你回「术数生成」。对话记录保存在本机 data/chats/。
+</div>
+{% endblock %}

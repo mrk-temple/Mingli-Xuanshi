@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}实验详情 · 命理玄师{% endblock %}
+{% block content %}
+
+{% set V = {'pending':'待验证','evaluated':'已判定','no-outcome':'无法验证'} %}
+{% set VD = {'exact-hit':'完全命中','partial-hit':'部分命中','direction-hit':'方向命中','timing-hit':'时间命中','miss':'未命中','ambiguous':'模糊','no-outcome':'无法验证'} %}
+
+<header class="page-head">
+  <p class="kicker">EXPERIMENT · {{ e.systemId }}</p>
+  <h1>预测记录 <span class="fn">{{ e.systemId }}</span></h1>
+</header>
+<p class="lead">判定逻辑公开可查——按优先级合成，系统无任何自动放宽口径的路径。</p>
+
+{% if e.blind %}
+<div class="notice">◈ 本预测处于<strong>盲测模式</strong>：锁定后不与盘局解读捆绑展示，减少「事后觉得特准」的代入偏差。真实结果录入后，判定不受解读内容影响。</div>
+{% endif %}
+
+<div class="report-meta">
+  <span class="rm-item">状态<b>{{ V[e.status] }}</b></span>
+  <span class="rm-item">判窗<b>{{ e.windowStart }} ~ {{ e.windowEnd }}</b></span>
+  <span class="rm-item">锁定于<b>{{ e.lockedAt }}</b></span>
+  {% if e.verdict %}<span class="rm-item">系统判定<b>{{ VD[e.verdict] }}</b></span>{% endif %}
+</div>
+
+<div class="card" style="border-left-color: var(--gold-dim);">
+  <h3>所问</h3>
+  <p>{{ e.questionText }}</p>
+  <p class="muted small">对应盘局：<a href="/session/{{ e.sessionId }}">{{ e.sessionId }}</a></p>
+
+  <h3 style="margin-top:22px;">预测 <span class="badge score">LOCKED · 锁定</span></h3>
+  <blockquote style="border-left:2px solid var(--gold-dim); padding-left:16px; margin:8px 0 0; color:var(--ink);">{{ e.prediction }}</blockquote>
+
+  {% if e.status == 'pending' %}
+  <h3 style="margin-top:26px">录入真实结果</h3>
+  <form action="/lab/{{ e.id }}/evaluate" method="post">
+    <label>真实结果 * <span class="muted small">—— 到期后如实描述发生了什么</span></label>
+    <textarea name="outcome" placeholder="如实描述，不往预测方向回填"></textarea>
+    <fieldset class="checkbox" style="margin:10px 0;">
+      <label><input type="checkbox" name="hit_exact" value="true"> 结果与预测完全一致</label>
+      <label><input type="checkbox" name="hit_direction" value="true"> 方向 / 趋势一致（细节或时间不完全符）</label>
+      <label><input type="checkbox" name="hit_timing" value="true"> 事件发生在预测窗口内</label>
+      <label><input type="checkbox" name="ambiguous" value="true"> 结果模糊难判</label>
+    </fieldset>
+    <button type="submit">提交并裁定 →</button>
+  </form>
+  <form action="/lab/{{ e.id }}/no-outcome" method="post" style="margin-top:8px;">
+    <p class="muted small">或：窗口已过但事件未发生 / 无法验证</p>
+    <input type="text" name="note" placeholder="备注（可选）" style="max-width:320px">
+    <button type="submit" class="btn-quiet">标记「无法验证」</button>
+  </form>
+  {% else %}
+  <h3 style="margin-top:26px">真实结果</h3>
+  <p>{{ e.outcome or '—' }}</p>
+  <h3>系统判定</h3>
+  <p><span class="badge score" style="font-size:14px; padding:6px 18px;">{{ e.verdict }}</span></p>
+  <p class="muted small">依据：{{ e.verdictReasoning }}（{{ e.evaluatedAt }}）</p>
+  {% endif %}
+</div>
+
+<h2>裁定规则表（公开）</h2>
+<table>
+  <tr><th>判定</th><th>条件（按优先级从上而下）</th></tr>
+  <tr><td><code>no-outcome</code></td><td>「无法确认结果」被勾选</td></tr>
+  <tr><td><code>ambiguous</code></td><td>「结果模糊难判」被勾选</td></tr>
+  <tr><td><code>exact-hit</code></td><td>完全一致</td></tr>
+  <tr><td><code>partial-hit</code></td><td>方向一致 <strong>且</strong> 窗口内发生（但不完全吻合）</td></tr>
+  <tr><td><code>direction-hit</code></td><td>仅方向一致</td></tr>
+  <tr><td><code>timing-hit</code></td><td>仅时间一致</td></tr>
+  <tr><td><code>miss</code></td><td>方向与时间均不符</td></tr>
+  <tr><td><code>ambiguous</code></td><td>结果难以归类，用户标记模糊</td></tr>
+</table>
+<p class="muted small" style="margin-top:8px">判定由 <code>mingli/core/experiment.py</code> 的公开函数依上述顺序合成；不含任何「提高命中率」的自动逻辑。</p>
+{% endblock %}

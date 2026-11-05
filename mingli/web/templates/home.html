@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}命理玄师 · Mingli XuanShi{% endblock %}
+{% block body_class %} class="page-home"{% endblock %}
+{% block content %}
+
+{# ── 今日基准 · 刻度条 ── #}
+<div class="skypanel reveal" style="--ri:0">
+  <span class="pillar-today">{{ today.ganzhi }}</span>
+  {% if today.jieqi %}<span class="skychip">{{ today.jieqi }}</span>{% endif %}
+  <span class="skyitem">月令 <b>{{ today.yueling }}</b></span>
+  {% if today.shengri %}<span class="skyitem">{{ today.shengri }} · <span class="dim">{{ today.lunar }}</span></span>{% endif %}
+  <span class="skyitem dim">今日公历 {{ today.solar }}</span>
+</div>
+
+<section class="home-hero">
+  <div class="home-hero-grid">
+    <div class="hero-inner reveal" style="--ri:1">
+      <p class="kicker"><span class="tiny-seal" aria-hidden="true">玄</span>命理玄师 · 观象书房</p>
+      <h1 class="home-title">观象明理，<br><b>从容问事。</b></h1>
+      <p class="home-sub">以传统符号为镜，梳理自己的提问。<br>读懂白话，核对依据，把判断交回生活。</p>
+      <a class="home-primary" href="/generate">开始一次白话解读 <span class="hp-arrow">↗</span></a>
+      <a class="hero-secondary" href="/research?tab=records">翻阅我的札记 →</a>
+      <div class="hero-footnote"><span>{{ active_count }} 种观察方式</span><span>计算与解释分离</span><span>依据可追溯</span></div>
+    </div>
+    <div class="hero-art" aria-hidden="true">{% include "partials/xiang_mark.html" %}<span class="hero-art-caption">一问 · 一观照</span><span class="hero-vertical">观其象　问其心</span></div>
+  </div>
+</section>
+
+{# ── 三核心入口 ── #}
+<nav class="home-tri" aria-label="三个核心空间">
+  <a class="tri-card reveal" style="--ri:2" href="/generate">
+    <span class="tri-no"><span class="entry-symbol" aria-hidden="true">☷</span>壹 · 观象</span>
+    <span class="tri-name">术数生成</span>
+    <span class="tri-desc">选择观察方式，写下问题，查看白话解读与可展开的依据</span>
+    <span class="tri-go">开始起局 →</span>
+  </a>
+  <a class="tri-card reveal" style="--ri:3" href="/chat">
+    <span class="tri-no"><span class="entry-symbol" aria-hidden="true">◇</span>贰 · 问心</span>
+    <span class="tri-name">玄师对话</span>
+    <span class="tri-desc">带着已生成的盘局与 AI 深度讨论——不重算，只解释</span>
+    <span class="tri-go">进入对话 →</span>
+  </a>
+  <a class="tri-card reveal" style="--ri:4" href="/research">
+    <span class="tri-no"><span class="entry-symbol" aria-hidden="true">▤</span>叁 · 留记</span>
+    <span class="tri-name">记录与研究</span>
+    <span class="tri-desc">历史盘局、预测实验、命中判定与规则课堂</span>
+    <span class="tri-go">查阅研究 →</span>
+  </a>
+</nav>
+
+{# ── 最近研究 + 工作台状态 ── #}
+<div class="home-lower reveal" style="--ri:5">
+  <div class="home-recent">
+    <h2>最近的札记 <a class="section-more" href="/research?tab=records">全部记录 ↗</a></h2>
+    {% if recent_sessions %}
+    <ol class="timeline compact">
+      {% for s in recent_sessions %}
+      <li class="timeline-item">
+        <time class="tl-time">{{ s.createdAt[:10] }}</time>
+        <div class="tl-main">
+          <span class="sysdot {{ 'east' if s.calculation.systemId != 'tarot' else 'west' }}"></span>
+          <a href="/session/{{ s.id }}">{{ {'bazi':'八字', 'tarot':'塔罗', 'liuyao':'六爻', 'meihua':'梅花', 'daliuren':'大六壬', 'xiaoliuren':'小六壬', 'yijing':'易经'}.get(s.calculation.systemId, s.calculation.systemId) }}</a>
+          <span class="muted small">{{ s.question.text[:40] }}{% if s.question.text|length > 40 %}…{% endif %}</span>
+        </div>
+      </li>
+      {% endfor %}
+    </ol>
+    {% else %}
+    <div class="empty small-empty">还没有研究记录——从<a href="/generate">术数生成</a>开始第一局。</div>
+    {% endif %}
+  </div>
+
+  <div class="home-status">
+    <h2>书房一览 <span class="hint">个人记录</span></h2>
+    <div class="stat-row tight">
+      <div class="stat-cell"><div class="k">已上线体系</div><div class="v">{{ active_count }}</div></div>
+      <div class="stat-cell"><div class="k">历史盘局</div><div class="v">{{ session_count }}</div></div>
+      <div class="stat-cell"><div class="k">待验证预测</div><div class="v">{{ pending_count }}</div></div>
+      <div class="stat-cell"><div class="k">完全命中</div><div class="v">{{ stats.verdictCounts['exact-hit'] }}</div></div>
+    </div>
+    <p class="muted small">已判定实验 {{ stats.n }} 次。统计为个人样本观察，不代表体系有效性。</p>
+    <p class="small"><a href="/research?tab=lab">预测实验室 →</a></p>
+  </div>
+</div>
+
+<div class="disclaimer-box">
+  今日干支与月令由确定性引擎按节气计算，仅作排盘基准——此栏只记时节，无关吉凶推断。
+  所有体系均如实标注状态：没有可靠计算器的体系不会被伪装成已上线。
+</div>
+{% endblock %}
